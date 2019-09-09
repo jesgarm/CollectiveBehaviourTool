@@ -1,3 +1,6 @@
+# Last update 09/09/2019
+
+
 import numpy as np
 from sklearn.neighbors import NearestNeighbors, KDTree
 
@@ -108,6 +111,8 @@ nameofFileFiltered = None
 
 perimeterSaved = False
 
+# Directorio por defecto, se puede modificar al renombrar el folder deseado
+# al comenzar con el programa
 renameFolderName = "imagesToAnalyze/"
 
 veldir_vec_u = []
@@ -125,6 +130,7 @@ errorAnalyzing = False
 filasActuales = 0
 empty_row = True
 
+gifFileName = None
 
 class OptionsMenu(QtWidgets.QWidget):
 
@@ -336,10 +342,6 @@ class OptionsMenu(QtWidgets.QWidget):
 
     def saveDataInTextFile(self):
 
-        #Hay que hacer lo de guardar los QColors en un fichero de texto con nombre config.txt
-        #al abrir programa se carga el fichero y se asignan las variables globales
-        # hay que cambiar todas al pintar en todas partes
-        #habria que poner por defecto que sean los colores que se marcan
         global color_labelled_data
         global color_perimeter
         global color_vector1
@@ -606,13 +608,15 @@ class WindowResults(QtWidgets.QWidget):
         self.hide()
         self.hideandshowSignal.emit()
 
-        densityCalculated = False
-        perimeterSaved = False
-
         self.cb_labelled.setChecked(False)
         self.cb_analyzed.setChecked(False)
         self.cb_perimeter.setChecked(False)
         self.cb_density.setChecked(False)
+
+        densityCalculated = False
+        perimeterSaved = False
+
+
 
 
     def selecteds(self,q):
@@ -914,6 +918,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global veldir_angle
         global veldir_velocity
 
+        global gifFileName
+
 
         c = QtGui.QColor(color_perimeter)
         penGreen = QtGui.QPen(Qt.red,3)
@@ -938,8 +944,9 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             #print("Directory ", dirName , " already exists")
 
         for j in tqdm(range(0,len(readFilesLong))):
-
             nombreFichero = files[j].split('_')[0]
+
+            gifFileName = nombreFichero
 
             fondo = renameFolderName+nombreFichero+".JPG"
 
@@ -1068,7 +1075,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
     def saveAnimation(self):
         global framesGenerated
-
+        global gifFileName
 
         if framesGenerated == False:
             self.generateFrames()
@@ -1106,8 +1113,13 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             pass
             #print("Directory ", dirName , " already exists")
 
+        # Se pide el nombre del gif y se ajusta duracion para crearlo
+
+        gifFileName = gifFileName[:-1]
+
         for i in tqdm(range(1)):
-            imageio.mimsave('generatedGifs/gifDePrueba.gif', imagesFrames, duration = 1)
+            #imageio.mimsave('generatedGifs/gifDePrueba.gif', imagesFrames, duration = 1)
+            imageio.mimsave('generatedGifs/'+gifFileName+'_animation.gif', imagesFrames, duration = timElapse)
 
     def drawVelandDir(self):
         global filesXPoints
@@ -2368,21 +2380,30 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
         global filasActuales
         global empty_row
 
+        global tiburonesTotales
+
         self.errorAtZoom = False
 
         self.tableRowCounter.emit()
 
         longitud_comprobacion = filasActuales
 
-        #print longitud_comprobacion
+        #print ("[INFO] La longitud de comprobacion es {}".format(longitud_comprobacion))
+        #print ("[INFO] El valor de tiburones almacenados locales es {}".format(self.sharkCount))
+        #print ("[INFO] El valor de tiburones almacenados globales es {}".format(tiburonesTotales))
 
         if self.sharkCount == 0 and empty_row == True:
             pass
+        # Condicion added para cuando se cargan datos bug desconocido
+        # dado que la variable sharkCount tarda en actualizarse y primero intenta
+        # comprobar el rePaintWithZoom
+        elif tiburonesTotales == longitud_comprobacion:
+            self.errorAtZoom = False
         elif self.sharkCount < longitud_comprobacion:
-            #print "El ultimo dato es incorrecto"
+            #print ("[INFO] El ultimo dato es incorrecto")
             self.errorAtZoom = True
         elif self.sharkCount == longitud_comprobacion:
-            #print "El ultimo dato es correcto"
+            #print ("[INFO] El ultimo dato es correcto")
             self.errorAtZoom = False
         else:
             self.errorAtZoom = True
@@ -3714,7 +3735,7 @@ class Window(QtWidgets.QWidget):
 
         renameFolderName = directorio.split('/')[-1] + "/"
 
-        #print renameFolderName
+        print renameFolderName
 
         files = sorted(os.listdir(directorio))
 
