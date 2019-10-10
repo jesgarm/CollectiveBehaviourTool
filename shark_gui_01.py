@@ -1,4 +1,4 @@
-# Last update 09/09/2019
+# Last update 10/10/2019
 
 
 import numpy as np
@@ -24,6 +24,8 @@ import imageio
 from scipy.spatial import ConvexHull
 
 from tqdm import tqdm
+
+import re
 
 tiburonesTotales = 0
 cargarDatos = False
@@ -131,6 +133,8 @@ filasActuales = 0
 empty_row = True
 
 gifFileName = None
+
+formato = None
 
 class OptionsMenu(QtWidgets.QWidget):
 
@@ -920,6 +924,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
         global gifFileName
 
+        global formato
 
         c = QtGui.QColor(color_perimeter)
         penGreen = QtGui.QPen(Qt.red,3)
@@ -943,18 +948,21 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             pass
             #print("Directory ", dirName , " already exists")
 
+        #print files
         for j in tqdm(range(0,len(readFilesLong))):
-            nombreFichero = files[j].split('_')[0]
+
+            nombreFichero = files[j].split('.')[0]
 
             gifFileName = nombreFichero
 
-            fondo = renameFolderName+nombreFichero+".JPG"
+            #print nombreFichero
+            fondo = renameFolderName + nombreFichero + "." + formato
 
             #print fondo
 
             self.pixmap = QPixmap(fondo)
             self.setPhoto(self.pixmap)
-
+            # Dibujo del perimetro
             for i in range(valorInicialRango,readFilesLong[j]-1):
 
                 #print "El rango actual es de ", valorInicialRango, readFilesLong[j]-1
@@ -985,10 +993,10 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             self._scene.addItem(linea_item)
             self.setScene(self._scene)
 
-            #Hasta arriba bien
 
+            # Dibujo del centroide
             for k in range(0,j+1):
-                rad = 5.0 #1.0
+                rad = 5.0 #1.0 #5.0
                 brush = QtGui.QBrush(Qt.SolidPattern)
 
                 ellipse_item = QtWidgets.QGraphicsEllipseItem(int(filesXPointsCenter[k])-rad,int(filesYPointsCenter[k])-rad,rad*2.0,rad*2.0)
@@ -998,7 +1006,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
                 self._scene.addItem(ellipse_item)
                 self.setScene(self._scene)
-
+            # Dibujo flecha
             for i in range(0,j):
 
                 valXHead = int(filesXPointsCenter[i+1])
@@ -1019,8 +1027,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 perpX = -udY
                 perpY = udX
 
-                L = 20 #longitud cabeza vector 2
-                H = 6 #anchura vector 4
+                L = 10 #longitud cabeza vector 2 #20
+                H = 3 #anchura vector 4 #6
 
                 leftX = valXHead - L * udX + H * perpX
                 leftY = valYHead - L * udY + H * perpY
@@ -1043,6 +1051,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 self._scene.addItem(linea_item_flecha_2)
 
                 self.setScene(self._scene)
+            # Dibujo texto
+            for i in range(j-1,j):
 
                 separacion = int( self._scene.height() / 195 )
 
@@ -1060,6 +1070,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 self.setScene(self._scene)
 
 
+
             valorInicialRango = readFilesLong[j]
 
             #guardo cada fotograma generado del gif
@@ -1070,7 +1081,6 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             painter.end()
 
             image.save("framegeneratorGif/"+nombreFichero+"_frameGif"+".JPG")
-
         framesGenerated = True
 
     def saveAnimation(self):
@@ -1136,6 +1146,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
         global renameFolderName
 
+        global formato
+
         #timElapse, okPressed = QInputDialog.getDouble(self, "Frame time lapse", "Timelapse(s):")
 
         #if okPressed:
@@ -1154,8 +1166,15 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         #Se dibuja todo de nuevo para tenerlo completo
         nombreFichero = files[-1].split('_')[0]
 
+        # Se busca el formato de las imagenes contenidas en la carpeta de
+        # muestras
+        files = sorted(os.listdir(renameFolderName))
+        for filename in files:
+            src = renameFolderName + "/" + filename
+            formato = src.split('.')[-1]
+
         #print "El fondo de la imagen es el siguiente"
-        fondo = renameFolderName+nombreFichero+".JPG"
+        fondo = renameFolderName + nombreFichero + "." + formato
         #print fondo
         self.pixmap = QPixmap(fondo)
         self.setPhoto(self.pixmap)
@@ -3720,7 +3739,10 @@ class Window(QtWidgets.QWidget):
         #print("List values XMed: ", valuesXMed[0:self.viewer.sharkCount])
         #print("List values YMed: ", valuesYMed[0:self.viewer.sharkCount])
 
-
+    def sorted_aphanumeric(self,data):
+        convert = lambda text: int(text) if text.isdigit() else text.lower()
+        alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+        return sorted(data, key=alphanum_key)
 
     def renameData(self):
         global renameFolderName
@@ -3737,9 +3759,15 @@ class Window(QtWidgets.QWidget):
 
         print renameFolderName
 
-        files = sorted(os.listdir(directorio))
+        #files = sorted(os.listdir(directorio))
+
+        files = os.listdir(directorio)
+
+        files = self.sorted_aphanumeric(files)
 
         dataName, okPressed = QInputDialog.getText(self, "Rename Dataset", "Insert new name:")
+
+        print files
 
         if okPressed:
             #print(dataName)
@@ -3747,7 +3775,8 @@ class Window(QtWidgets.QWidget):
             for filename in files:
                 src = directorio + "/" + filename
                 format = src.split('.')[-1]
-                dst = dataName + str(i) + "."+ format
+                number = '{0:03}'.format(i)
+                dst = dataName + str(number) + "."+ format
                 dst = directorio + "/" + dst
 
                 #print(src)
@@ -3768,6 +3797,14 @@ class Interfaz(QMainWindow):
         self.init_ui()
 
     def init_ui(self):
+
+        # Create images folder if it doesn't exist
+        dirName = "imagesToAnalyze"
+        if not os.path.exists(dirName):
+            os.mkdir(dirName)
+            #print("Directory ", dirName , "Created")
+        else:
+            pass
 
         # Create Menu Bar
         bar = self.menuBar()
