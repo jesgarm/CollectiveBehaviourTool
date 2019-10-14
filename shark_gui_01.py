@@ -3765,7 +3765,7 @@ class Window(QtWidgets.QWidget):
 
         renameFolderName = directorio.split('/')[-1] + "/"
 
-        print renameFolderName
+        #print renameFolderName
 
         #files = sorted(os.listdir(directorio))
 
@@ -3775,7 +3775,7 @@ class Window(QtWidgets.QWidget):
 
         dataName, okPressed = QInputDialog.getText(self, "Rename Dataset", "Insert new name:")
 
-        print files
+        #print files
 
         if okPressed:
             #print(dataName)
