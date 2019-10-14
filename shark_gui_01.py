@@ -1,4 +1,4 @@
-# Last update 10/10/2019
+# Last update 14/10/2019
 
 
 import numpy as np
@@ -1056,7 +1056,12 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
                 separacion = int( self._scene.height() / 195 )
 
-                if i == 0:
+
+                #print i, veldir_velocity[i]
+
+                if i == -1:
+                    texto = QtWidgets.QGraphicsTextItem(" ")
+                elif i == 0:
                     texto = QtWidgets.QGraphicsTextItem("v: "+str(veldir_velocity[i]))
                 else:
                     texto = QtWidgets.QGraphicsTextItem("v: "+str(veldir_velocity[i])+" , a: "+ str(veldir_angle[i-1]))
@@ -1398,15 +1403,15 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global filesXPointsCenter
         global filesYPointsCenter
 
-
-
         #print self._scene.height()
 
         separacion = int( self._scene.height() / 195 )
 
         for i in range(0,len(veldir_velocity)):
 
-            if i == 0:
+            if i == -1:
+                texto = QtWidgets.QGraphicsTextItem(" ")
+            elif i == 0:
                 texto = QtWidgets.QGraphicsTextItem("v: "+str(veldir_velocity[i]))
             else:
                 texto = QtWidgets.QGraphicsTextItem("v: "+str(veldir_velocity[i])+" , a: "+ str(veldir_angle[i-1]))
@@ -1799,6 +1804,9 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             #cv2.circle(imageReConverted,(posOfArrays[1][i],posOfArrays[0][i]),1,(cant_B,cant_G,cant_R),-1)
 
         cv2.imwrite('cache_heatmap.JPG',imageReConverted)
+
+        # Se guarda el mapa de calor solo para hacer prueba de gif
+        #cv2.imwrite('mapa_calor.JPG',imageReConverted)
 
         self.pixmap = QPixmap("cache_heatmap.JPG")
         self.setPhoto(self.pixmap)
