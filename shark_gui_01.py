@@ -1,9 +1,8 @@
-# Last update 14/10/2019
+# Last update 07/04/2020 
 
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors, KDTree
-
 from PyQt5 import QtCore, QtGui, QtWidgets
 import os
 import csv
@@ -13,19 +12,22 @@ from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QMessageBox, QGraphics
 from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, qApp, QPushButton, QVBoxLayout, QHBoxLayout, QAbstractItemView, QColorDialog, QInputDialog
 from PyQt5.QtCore import QLineF, Qt
 from math import sqrt
-
 import statistics
 import cv2
 import imutils
-
 import time
 import imageio
-
 from scipy.spatial import ConvexHull
-
 from tqdm import tqdm
-
 import re
+
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+from matplotlib import cm
+
+
+
+
 
 tiburonesTotales = 0
 cargarDatos = False
@@ -39,6 +41,8 @@ doubleClick = True
 deleteIt = False
 perimeterClick = False
 perAnalyze = False
+
+measureClick = False
 
 valuesXMed = []
 valuesYMed = []
@@ -135,6 +139,26 @@ empty_row = True
 gifFileName = None
 
 formato = None
+
+dist_pixeles = 0
+dist_cm = 0
+
+ratio_cm_pixel = 0
+ratio_cm_pixel_cuadrado = 0
+
+measure_pointList = []
+
+posOfArrays = []
+
+areaROI = 0
+areaROI_cm = 0
+
+cte_pos_x = 2
+cte_pos_y = 12
+
+
+
+
 
 class OptionsMenu(QtWidgets.QWidget):
 
@@ -542,14 +566,16 @@ class WindowResults(QtWidgets.QWidget):
         self.cb_labelled = QCheckBox('Show labelled data')
         self.cb_analyzed = QCheckBox('Show analyzed data')
         self.cb_perimeter = QCheckBox('Show data perimeter')
-
         self.cb_density = QCheckBox('Show image density')
+
+        self.cb_3Ddensity = QCheckBox('Show 3D map density')
 
         self.cb_labelled.stateChanged.connect(self.drawStuff)
         self.cb_analyzed.stateChanged.connect(self.drawStuff)
         self.cb_perimeter.stateChanged.connect(self.drawStuff)
-
         self.cb_density.stateChanged.connect(self.drawHeatMap)
+
+        self.cb_3Ddensity.stateChanged.connect(self.draw3DHeatMap)
 
         self.savebtn.clicked.connect(self.selecteds)
         self.backtolabel.clicked.connect(self.backmenu)
@@ -593,6 +619,8 @@ class WindowResults(QtWidgets.QWidget):
         VBlayout1.addWidget(self.cb_perimeter)
         VBlayout1.addWidget(self.cb_density)
 
+        VBlayout1.addWidget(self.cb_3Ddensity)
+
         VBlayout1.addStretch(1)
 
         VBlayout1.addWidget(self.backtolabel)
@@ -617,6 +645,8 @@ class WindowResults(QtWidgets.QWidget):
         self.cb_perimeter.setChecked(False)
         self.cb_density.setChecked(False)
 
+        self.cb_3Ddensity.setChecked(False)
+
         densityCalculated = False
         perimeterSaved = False
 
@@ -625,6 +655,25 @@ class WindowResults(QtWidgets.QWidget):
 
     def selecteds(self,q):
         self.viewerRes.saveImageAnalyzed()
+
+    def draw3DHeatMap(self):
+
+        if self.cb_3Ddensity.isChecked():
+
+            # Nos aseguramos de que se haya calculado anteriormente la densidad
+            self.cb_density.setChecked(True)
+            self.drawHeatMap()
+            self.cb_density.setChecked(False)
+
+            # Se calcula el mapa 3D
+            self.viewerRes.Density3DProcess()
+
+
+
+
+
+
+
 
 
     def drawHeatMap(self):
@@ -682,6 +731,7 @@ class WindowResults(QtWidgets.QWidget):
                 self.viewerRes.ImageProcess(0,1)
         else:
             self.viewerRes.resetView(2)
+            self.viewerRes.resetView(7)
 
     def editMassCenter(self):
 
@@ -778,6 +828,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
     editVelocityLabel = QtCore.pyqtSignal()
     editVelDirTable = QtCore.pyqtSignal()
 
+    global ratio_cm_pixel
+
     def __init__(self,parent):
         super(PhotoVectorViewer,self).__init__()
 
@@ -794,6 +846,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(30, 30, 30)))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
+
         #self.show()
 
     def hasPhoto(self):
@@ -1576,6 +1629,10 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 if items.data(1) == num:
                     self._scene.removeItem(items)
 
+            if itemtype == QtWidgets.QGraphicsTextItem:
+                if items.data(1) == num:
+                    self._scene.removeItem(items)
+
     def calcMedian(self):
         global sizes
         global average_size
@@ -1612,6 +1669,21 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         arr = np.array(ptr).reshape(height,width,4)
         return arr
 
+    def Density3DProcess(self):
+        global posOfArrays
+        global v_values
+        print('Se calcula el plot en 3D')
+
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        surf = ax.plot_trisurf(posOfArrays[0],posOfArrays[1],v_values, cmap=cm.jet, linewidth=0.1)
+        fig.colorbar(surf, shrink=0.5, aspect=5)
+        plt.show()
+
+
+
+        # Se necesitan los puntos y sus intensidades en V: x,y,intensidad
+
 
     def DensityProcess(self,var):
 
@@ -1627,10 +1699,15 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         #image = self.grab().toImage()
         imageReConverted = self.convertQImageToMat(image)
 
+
+        global posOfArrays
+
         global s_values
+        del s_values[:]
         global valXInsideConvexHull
         global valYInsideConvexHull
         global v_values
+        del v_values[:]
 
         global convexXHull
         del convexXHull[:]
@@ -1782,6 +1859,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             #print colour
             #Descompongo color en rgb
 
+            v_values.append(valordeV)
+
             parte_R = colour.split(',')[0]
 
             #parte_R = colour[1:3]
@@ -1922,6 +2001,11 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
         global midPointList
 
+        global ratio_cm_pixel
+        global ratio_cm_pixel_cuadrado
+        global areaROI
+        global areaROI_cm
+
 
         if var == 0:
             valCenterMassX = statistics.mean(valuesXMed)
@@ -1948,11 +2032,12 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
         penGreen = QtGui.QPen(c,calcGrosorAnalyzed)
 
-        if pintar == 1:
+        if pintar == 1 and ratio_cm_pixel == 0:
             ellipse_item = QtWidgets.QGraphicsEllipseItem(valCenterMassX-rad,valCenterMassY-rad,rad*2.0,rad*2.0)
             ellipse_item.setPen(penGreen)
             ellipse_item.setBrush(brush)
             ellipse_item.setData(1,2)
+
 
             self._scene.addItem(ellipse_item)
             self.setScene(self._scene)
@@ -2084,12 +2169,99 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             valYHead = int(valuesYPerimeter[cantidad-1])
 
 
+
             if pintar == 1:
                 linea_item = QtWidgets.QGraphicsLineItem(valXTail,valYTail,valXHead,valYHead)
                 linea_item.setPen(penGreen)
                 linea_item.setData(1,2)
                 self._scene.addItem(linea_item)
                 self.setScene(self._scene)
+
+                if ratio_cm_pixel != 0:
+                    # Se calcula el area que ocupa el perimetro (en pixeles)
+                    # y se convierte a cm2
+                    rect = QtCore.QRectF(self._photo.pixmap().rect())
+                    image = QtGui.QImage(rect.width(),rect.height(), QImage.Format_ARGB32_Premultiplied)
+                    painter = QtGui.QPainter(image)
+                    self._scene.render(painter)
+                    painter.end()
+                    #image = self.grab().toImage()
+                    imageReConverted = self.convertQImageToMat(image)
+
+
+                    #imageFiltered = cv2.blur(imageReConverted,(5,5)) #15,15 o 10,10
+
+                    mask = np.zeros(imageReConverted.shape, dtype=np.uint8)
+
+                    roi_corners = np.array(perimeterPointList)
+                    channel_count = imageReConverted.shape[2]
+                    ignore_mask_color = (255,)*channel_count
+                    cv2.fillConvexPoly(mask,roi_corners,ignore_mask_color)
+                    masked_image = cv2.bitwise_and(imageReConverted,mask)
+                    #hsv_img_original = cv2.cvtColor(masked_image, cv2.COLOR_RGB2HSV)
+                    #h,s,v = cv2.split(hsv_img_original)
+                    contours_image = cv2.cvtColor(masked_image, cv2.COLOR_BGR2GRAY)
+
+                    im2,cnts,hierarchy = cv2.findContours(contours_image.copy(),
+                        cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                    #cnts = imutils.grab_contours(cnts)
+
+                    #print(len(cnts))
+                    cnt = cnts[0]
+                    cv2.drawContours(contours_image, cnts, -1, 255, 3)
+
+                    #cv2.namedWindow('masked_image', cv2.WINDOW_NORMAL)
+                    #cv2.resizeWindow('masked_image',600,600)
+                    #cv2.moveWindow('masked_image',200,100)
+                    #cv2.imshow('masked_image',contours_image)
+
+                    areaROI  = cv2.contourArea(cnt)
+                    areaROI_cm = areaROI / ratio_cm_pixel_cuadrado
+                    print("El area en cm2 es: ", areaROI_cm)
+
+
+                    x = self._scene.width()
+                    y = self._scene.height()
+                    separacion = int ( self._scene.height() / 195)
+                    texto = QtWidgets.QGraphicsTextItem("Area (cm2): " + str(areaROI_cm))
+                    texto.setPos(0 + cte_pos_x * separacion, 0 + cte_pos_y* separacion)
+                    font = QFont("Helvetica [Cronyx]", y / 40)
+                    font.setBold(True)
+                    texto.setFont(font)
+                    c = QtGui.QColor(color_perimeter)
+                    texto.setDefaultTextColor(c)
+                    texto.setData(1,7)
+                    self._scene.addItem(texto)
+                    self.setScene(self._scene)
+                #areaROI = cv2.countNonZero(v)
+                #print(areaROI)
+
+
+                #cv2.namedWindow('Mask', cv2.WINDOW_NORMAL)
+                #cv2.resizeWindow('Mask',600,600)
+                #cv2.moveWindow('Mask',200,100)
+                #cv2.imshow('Mask',contours_image)
+
+                #cv2.namedWindow('hsv_img_original', cv2.WINDOW_NORMAL)
+                #cv2.resizeWindow('hsv_img_original',600,600)
+                #cv2.moveWindow('hsv_img_original',200,100)
+                #cv2.imshow('hsv_img_original',hsv_img_original)
+
+                #cv2.namedWindow('h', cv2.WINDOW_NORMAL)
+                #cv2.resizeWindow('h',600,600)
+                #cv2.moveWindow('h',200,100)
+                #cv2.imshow('h',h)
+
+                #cv2.namedWindow('s', cv2.WINDOW_NORMAL)
+                #cv2.resizeWindow('s',600,600)
+                #cv2.moveWindow('s',200,100)
+                #cv2.imshow('s',s)
+
+                #cv2.namedWindow('v', cv2.WINDOW_NORMAL)
+                #cv2.resizeWindow('v',600,600)
+                #cv2.moveWindow('v',200,100)
+                #cv2.imshow('v',v)
+
 
             #print(imagePath)
             nameofFile = imagePath.split('/')[-1]
@@ -2149,6 +2321,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global color_dot1
         global color_dot2
         global color_labelled_analyzed_data
+
 
 
         #self.resetView()
@@ -2243,7 +2416,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
             if valAngle <= average_angle:
                 genericPen = penVector1
-            elif valAngle >= average_angle:
+            elif valAngle > average_angle:
                 genericPen = penVector2
             linea_item_vector.setPen(genericPen)
 
@@ -2301,10 +2474,12 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
     tableUpdater = QtCore.pyqtSignal(int)
     ResetInfoSig = QtCore.pyqtSignal()
     DragModeConnecter = QtCore.pyqtSignal(bool,int)
-
     labelChecker = QtCore.pyqtSignal(int)
-
     tableRowCounter = QtCore.pyqtSignal()
+
+    editAnalyzeImageLabel = QtCore.pyqtSignal()
+
+
 
     def __init__(self, parent):
         super(PhotoDataViewer, self).__init__(parent)
@@ -2584,6 +2759,8 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
         global color_dot1
         global color_dot2
         global color_labelled_analyzed_data
+        global measure_pointList
+
         if self._photo.isUnderMouse():
             if event.button() == QtCore.Qt.LeftButton:
                 #print('contador tiburones interno')
@@ -2591,7 +2768,94 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                 if self.handDrag == False and self.startSelecting == True and deleteIt == False and perimeterClick == False:
                     self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
                     self.photoClicked.emit(QtCore.QPointF(self.mapToScene(event.pos())))
-                    if self.selectorActual == 1:
+
+                    if self.selectorActual == 1 and measureClick == True:
+                        self.selectorActual +=1
+                        e = QtCore.QPointF(self.mapToScene(event.pos()))
+
+                        self.startX = e.x()
+                        self.startY = e.y()
+                        self.clicked = True
+
+
+                    elif self.selectorActual == 2 and measureClick == True:
+                        e = QtCore.QPointF(self.mapToScene(event.pos()))
+                        #print(color_labelled_data)
+                        c = QtGui.QColor(color_labelled_data)
+                        pen = QtGui.QPen(c,calcGrosor)
+                        #self._scene.addItem(self._scene.addLine(self.startX,self.startY,e.x(),e.y(),pen))
+
+                        linea_item = QtWidgets.QGraphicsLineItem(self.startX,self.startY,e.x(),e.y())
+                        linea_item.setData(0,self.sharkCount)
+                        linea_item.setPen(pen)
+                        self._scene.addItem(linea_item)
+                        self.setScene(self._scene)
+
+                        self.selectorActual = 1
+
+                        # Calculo distancia real
+                        dX = self.startX - e.x()
+                        dY = self.startY - e.y()
+                        dist = int(sqrt(dX* dX + dY * dY))
+                        global dist_pixeles
+                        dist_pixeles = dist
+                        print('Distancia en pixeles:',dist_pixeles)
+
+                        # Se guardan los puntos de la distancia
+                        pointIniDist = [self.startX,self.startY]
+                        pointFinDist = [e.x(),e.y()]
+
+                        global measure_pointList
+                        del measure_pointList[:]
+
+                        measure_pointList.append(pointIniDist)
+                        measure_pointList.append(pointFinDist)
+
+                        # Se pide introducir equivalencia real en centimetros
+                        distCm, okPressed = QInputDialog.getDouble(self, "Actual Image Distance", "Distance(cm):")
+
+                        if okPressed and distCm != 0.0:
+                            global dist_cm
+                            dist_cm = distCm
+                            #print(distCm)
+                        else:
+                            self.msg = QtWidgets.QMessageBox.about(self,'Cancelling...','0.0 is not a valid number')
+
+                        # Se calcula relacion entre cm y pixeles
+                        global ratio_cm_pixel
+                        global ratio_cm_pixel_cuadrado
+                        #ratio_cm_pixel = (1 * dist_pixeles) / dist_cm
+                        ratio_cm_pixel = dist_pixeles / dist_cm
+
+                        ratio_cm_pixel_cuadrado = ratio_cm_pixel**2
+
+
+                        # Se muestra en pantalla la equivalencia en la esquina inferior izquierda
+                        print("El ratio (pixel/cm) es de: ", ratio_cm_pixel)
+                        print("Ratio cuadrado: ", ratio_cm_pixel_cuadrado)
+
+                        x = self._scene.width()
+                        y = self._scene.height()
+                        separacion = int( self._scene.height() / 195 )
+                        texto = QtWidgets.QGraphicsTextItem("Ratio (pixel/cm): " + str(ratio_cm_pixel))
+                        texto.setPos(0 + cte_pos_x * separacion,y - cte_pos_y * separacion)
+                        font = QFont("Helvetica [Cronyx]", y / 40)
+                        font.setBold(True)
+                        texto.setFont(font)
+                        c = QtGui.QColor(color_perimeter)
+                        texto.setDefaultTextColor(c)
+                        self._scene.addItem(texto)
+                        self.setScene(self._scene)
+
+
+
+                        #print(measure_pointList)
+                        self.editAnalyzeImageLabel.emit()
+                        self.clicked = False
+
+
+
+                    if self.selectorActual == 1 and measureClick == False:
 
                         self.selectorActual += 1
                         self.labelUpdater.emit(self.selectorActual,self.sharkCount,QtCore.QPointF(self.mapToScene(event.pos())))
@@ -2602,7 +2866,8 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
 
                         self.clicked = True
 
-                    elif self.selectorActual == 2 and doubleClick == True and perimeterClick == False:
+
+                    elif self.selectorActual == 2 and doubleClick == True and perimeterClick == False and measureClick == False:
                         e = QtCore.QPointF(self.mapToScene(event.pos()))
                         #print(color_labelled_data)
                         c = QtGui.QColor(color_labelled_data)
@@ -2620,7 +2885,8 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                         self.sharkCount += 1
 
                         #Activar funcion de analisis
-                        self.labelChecker.emit(1)
+                        if self.sharkCount > 2:
+                            self.labelChecker.emit(1)
 
 
                 #Seleccionar perimetros
@@ -2773,7 +3039,7 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
         global calcGrosor
         if self._photo.isUnderMouse():
             if event.button() == QtCore.Qt.LeftButton:
-                if self.handDrag == False and self.startSelecting == True and doubleClick == False and deleteIt == False and perimeterClick == False:
+                if self.handDrag == False and self.startSelecting == True and doubleClick == False and deleteIt == False and perimeterClick == False and measureClick == False:
                     self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
                     e = QtCore.QPointF(self.mapToScene(event.pos()))
                     c = QtGui.QColor(color_labelled_data)
@@ -2786,7 +3052,9 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                     self.selectorActual = 1
                     self.labelUpdater.emit(self.selectorActual,self.sharkCount,QtCore.QPointF(self.mapToScene(event.pos())))
                     self.sharkCount += 1
-                    self.labelChecker.emit(1)
+
+                    if self.sharkCount > 2:
+                        self.labelChecker.emit(1)
 
                     self.clicked = False
         super(PhotoDataViewer, self).mouseReleaseEvent(event)
@@ -3151,6 +3419,8 @@ class Window(QtWidgets.QWidget):
         global valuesYPerimeter
         del valuesYPerimeter[:]
 
+        global ratio_cm_pixel
+
         self.data.clear()
         col_headers = ['Tail X', 'Tail Y', 'Head X', 'Head Y']
         self.data.setHorizontalHeaderLabels(col_headers)
@@ -3180,6 +3450,20 @@ class Window(QtWidgets.QWidget):
 
         self.viewer.drawLoadedData()
         self.viewer.sharkCount = tiburones
+
+        if ratio_cm_pixel != 0:
+            x = self.viewer._scene.width()
+            y = self.viewer._scene.height()
+            separacion = int( self.viewer._scene.height() / 195 )
+            texto = QtWidgets.QGraphicsTextItem("Ratio (pixel/cm): " + str(ratio_cm_pixel))
+            texto.setPos(0 + cte_pos_x * separacion,y - cte_pos_y * separacion)
+            font = QFont("Helvetica [Cronyx]", y / 40)
+            font.setBold(True)
+            texto.setFont(font)
+            c = QtGui.QColor(color_perimeter)
+            texto.setDefaultTextColor(c)
+            self.viewer._scene.addItem(texto)
+            self.viewer.setScene(self.viewer._scene)
 
 
 
@@ -3383,6 +3667,9 @@ class Window(QtWidgets.QWidget):
             global perimeterClick
             perimeterClick = False
 
+            global measureClick
+            measureClick = False
+
             self.label_status.setText('Point and click. Status: Select Tail')
 
             self.viewer.startX = None
@@ -3401,6 +3688,9 @@ class Window(QtWidgets.QWidget):
             deleteIt = False
             global perimeterClick
             perimeterClick = False
+
+            global measureClick
+            measureClick = False
 
             self.viewer.clicked = False
 
@@ -3421,11 +3711,37 @@ class Window(QtWidgets.QWidget):
             global deleteIt
             deleteIt = False
 
+            global measureClick
+            measureClick = False
+
             self.label_status.setText('Select perimeter points. Status: Select points to obtain perimeter')
 
             self.viewer.startX = None
             self.viewer.startY = None
 
+
+    def SelectDist(self):
+
+        wantToChangeToPerimeter = False
+
+        cambio = self.viewer.deleteDataOnSwitchMode(wantToChangeToPerimeter)
+
+        if cambio == 1:
+            global perimeterClick
+            perimeterClick = False
+            global doubleClick
+            doubleClick = False
+            global deleteIt
+            deleteIt = False
+            global measureClick
+            measureClick = True
+
+            self.viewer.clicked = False
+
+            self.label_status.setText('Select actual measurements. Status: Select two points to measure')
+
+            self.viewer.startX = None
+            self.viewer.startY = None
 
 
 
@@ -3462,6 +3778,12 @@ class Window(QtWidgets.QWidget):
         self.dialog.viewerRes.calculateVelandDir()
 
 
+    def ImageAnalyze(self):
+        #########################################
+        print('Se analiza la imagen en busca de heridas...')
+        #########################################
+        # Se tiene que llamar a una funcion de viewerRes dentro de dialog y que se muestre
+        # etc etc...
 
     def PerimeterAnalyze(self):
         global perAnalyze
@@ -3486,6 +3808,20 @@ class Window(QtWidgets.QWidget):
 
 
         self.dialog_2 = DataResults(1,1)
+
+        if ratio_cm_pixel != 0:
+            x = self.dialog.viewerRes._scene.width()
+            y = self.dialog.viewerRes._scene.height()
+            separacion = int( self.dialog.viewerRes._scene.height() / 195 )
+            texto = QtWidgets.QGraphicsTextItem("Ratio (pixel/cm): " + str(ratio_cm_pixel))
+            texto.setPos(0 + cte_pos_x * separacion,y - cte_pos_y * separacion)
+            font = QFont("Helvetica [Cronyx]", y / 40)
+            font.setBold(True)
+            texto.setFont(font)
+            c = QtGui.QColor(color_perimeter)
+            texto.setDefaultTextColor(c)
+            self.dialog.viewerRes._scene.addItem(texto)
+            self.dialog.viewerRes.setScene(self.dialog.viewerRes._scene)
 
         #self.dialog.viewerRes.drawPerimeter()
 
@@ -3522,6 +3858,8 @@ class Window(QtWidgets.QWidget):
         global tiburonesTotales
 
         global errorAnalyzing
+
+        global ratio_cm_pixel
 
         #if cargarDatos == True:
         #    self.viewer.sharkCount = tiburonesTotales
@@ -3585,6 +3923,25 @@ class Window(QtWidgets.QWidget):
             self.dialog.cb_analyzed.setEnabled(True)
             self.dialog.cb_perimeter.setEnabled(True)
             self.dialog.cb_density.setEnabled(True)
+
+            if ratio_cm_pixel != 0:
+                x = self.dialog.viewerRes._scene.width()
+                y = self.dialog.viewerRes._scene.height()
+                separacion = int( self.dialog.viewerRes._scene.height() / 195 )
+                texto = QtWidgets.QGraphicsTextItem("Ratio (pixel/cm): " + str(ratio_cm_pixel))
+                texto.setPos(0 + cte_pos_x * separacion,y - cte_pos_y * separacion)
+                font = QFont("Helvetica [Cronyx]", y / 40)
+                font.setBold(True)
+                texto.setFont(font)
+                c = QtGui.QColor(color_perimeter)
+                texto.setDefaultTextColor(c)
+                self.dialog.viewerRes._scene.addItem(texto)
+                self.dialog.viewerRes.setScene(self.dialog.viewerRes._scene)
+
+
+
+
+
 
             self.dialog.show()
 
@@ -3821,20 +4178,26 @@ class Interfaz(QMainWindow):
         # Create Root Menus
         file = bar.addMenu('File')
         analyze_info = bar.addMenu('Analyze Labelled Info')
+
+        #analyze_image = bar.addMenu('Analyze Image')
+
         labelling_methods = bar.addMenu('Labelling Method')
         delete_options = bar.addMenu('Delete Options')
-
         personal_options = bar.addMenu('Options')
 
         # Signals
         self.win.dialog.hideandshowSignal.connect(self.mostrar)
-
         self.win.data.labelChecker.connect(self.labelChecker)
         self.win.viewer.labelChecker.connect(self.labelChecker)
+
+        self.win.viewer.editAnalyzeImageLabel.connect(self.editAnalyzeImageLabel)
 
 
         # Create Actions for Menus
 
+        #self.analyze_image_action = QAction('Analyze &loaded Image', self)
+        #self.analyze_image_action.setShortcut('Ctrl+K')
+        #self.analyze_image_action.setEnabled(False)
 
         self.rename_dataset_action = QAction('&Rename Dataset', self)
         self.rename_dataset_action.setShortcut('Ctrl+T')
@@ -3898,6 +4261,12 @@ class Interfaz(QMainWindow):
         self.click_and_release.setChecked(False)
         self.click_and_release.setEnabled(False)
 
+        self.select_actual_measurements = QAction('Select &actual measurements', self)
+        self.select_actual_measurements.setShortcut('Ctrl+M')
+        self.select_actual_measurements.setCheckable(True)
+        self.select_actual_measurements.setChecked(False)
+        self.select_actual_measurements.setEnabled(False)
+
         # Add actions to menus
         file.addAction(open_action)
         file.addAction(self.open_data_action)
@@ -3907,8 +4276,9 @@ class Interfaz(QMainWindow):
 
         labelling_methods.addAction(self.click_and_click)
         labelling_methods.addAction(self.click_and_release)
-
         labelling_methods.addAction(self.click_perimeter)
+
+        labelling_methods.addAction(self.select_actual_measurements)
 
         delete_options.addAction(self.reset_action)
         delete_options.addAction(self.delete_items)
@@ -3917,6 +4287,8 @@ class Interfaz(QMainWindow):
         analyze_info.addAction(self.analyze_action)
         analyze_info.addAction(self.analyze_perimeter_action)
         analyze_info.addAction(self.analyze_dir_vel_action)
+
+        #analyze_image.addAction(self.analyze_image_action)
 
         personal_options.addAction(self.options)
 
@@ -3927,12 +4299,18 @@ class Interfaz(QMainWindow):
         delete_options.triggered.connect(self.selected)
         analyze_info.triggered.connect(self.analyze)
 
+        #analyze_image.triggered.connect(self.image_analyze_selected)
+
         personal_options.triggered.connect(self.showOptions)
 
 
         self.setWindowTitle("Shark gui")
 
         self.show()
+
+    def editAnalyzeImageLabel(self):
+        pass
+        #self.analyze_image_action.setEnabled(True)
 
     def labelChecker(self,num):
         global perimeterPointList
@@ -3948,10 +4326,12 @@ class Interfaz(QMainWindow):
             self.analyze_perimeter_action.setEnabled(True)
             self.click_and_release.setEnabled(False)
             self.click_and_click.setEnabled(False)
+            self.select_actual_measurements.setEnabled(False)
         else:
             self.analyze_perimeter_action.setEnabled(False)
             self.click_and_release.setEnabled(True)
             self.click_and_click.setEnabled(True)
+            self.select_actual_measurements.setEnabled(True)
 
 
 
@@ -3986,6 +4366,7 @@ class Interfaz(QMainWindow):
                 #self.analyze_perimeter_action.setEnabled(True)
                 self.click_perimeter.setEnabled(True)
                 self.analyze_dir_vel_action.setEnabled(True)
+                self.select_actual_measurements.setEnabled(True)
 
         elif option == '&Rename Dataset':
             self.win.renameData()
@@ -3999,6 +4380,9 @@ class Interfaz(QMainWindow):
             self.click_and_click.setChecked(True)
             self.delete_items.setChecked(False)
             self.click_perimeter.setChecked(False)
+
+            self.select_actual_measurements.setChecked(False)
+
             self.win.ClickClick()
         elif option == 'Drag and &release':
             #print('drag and r')
@@ -4006,6 +4390,9 @@ class Interfaz(QMainWindow):
             self.click_and_click.setChecked(False)
             self.delete_items.setChecked(False)
             self.click_perimeter.setChecked(False)
+
+            self.select_actual_measurements.setChecked(False)
+
             self.win.ClickRelease()
         elif option == '&Delete single item':
             #print('delete item')
@@ -4013,6 +4400,9 @@ class Interfaz(QMainWindow):
             self.click_and_click.setChecked(False)
             self.delete_items.setChecked(True)
             self.click_perimeter.setChecked(False)
+
+            self.select_actual_measurements.setChecked(False)
+
             self.win.DeleteItem()
         elif option == '&Reset labelling info':
             self.win.ResetInfo()
@@ -4023,7 +4413,25 @@ class Interfaz(QMainWindow):
             self.click_and_click.setChecked(False)
             self.delete_items.setChecked(False)
 
+            self.select_actual_measurements.setChecked(False)
+
             self.win.ClickPerimeter()
+        elif option == 'Select &actual measurements':
+            self.click_perimeter.setChecked(False)
+            self.click_and_release.setChecked(False)
+            self.click_and_click.setChecked(False)
+            self.delete_items.setChecked(False)
+
+            self.select_actual_measurements.setChecked(True)
+
+            self.win.SelectDist()
+
+    def image_analyze_selected(self,q):
+
+        option = q.text()
+
+        if option == 'Analyze &loaded Image':
+            self.win.ImageAnalyze()
 
     def analyze(self,q):
         global perAnalyze
