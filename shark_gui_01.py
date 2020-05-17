@@ -1,6 +1,7 @@
-# Last update 07/04/2020 
+# Last update 17/05/2020
 
-
+# Se importan los paquetes necesarios para el correcto funcionamiento de la
+# aplicación
 import numpy as np
 from sklearn.neighbors import NearestNeighbors, KDTree
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -20,15 +21,12 @@ import imageio
 from scipy.spatial import ConvexHull
 from tqdm import tqdm
 import re
-
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-
-
-
-
+# Listado de variables, listados, arrays, boolean y otros empleados
+# para el almacenamiento y procesado de datos
 tiburonesTotales = 0
 cargarDatos = False
 valuesXTail = []
@@ -41,41 +39,30 @@ doubleClick = True
 deleteIt = False
 perimeterClick = False
 perAnalyze = False
-
 measureClick = False
-
 valuesXMed = []
 valuesYMed = []
-
 vec_u = []
 vec_v = []
-
 midPointList = []
 indexList = []
 neighList = []
-
 angleList = []
-
 sizes = []
-
 average_size = 0
-
 average_angle = 0
-
 valCenterMassX = 0
 valCenterMassY = 0
-
 perimeterPointList = []
 valuesXPerimeter = []
 valuesYPerimeter = []
-
 s_values = []
 s_pointList = []
 v_values = []
-
 calcGrosor = 11
 calcGrosorAnalyzed = 10
 
+# Variables fichero configuración de Preferencias
 color_labelled_data = "#000000"
 color_labelled_analyzed_data = "#008000"
 color_perimeter = "#ff0000"
@@ -83,38 +70,25 @@ color_vector1 = "#0000ff"
 color_vector2 = "#ff0000"
 color_dot1 = "#0000ff"
 color_dot2 = "#008000"
-
 color_layers = "#0000ff"
-
 number_of_layers = 255
 
 convexXHull = []
 convexYHull = []
 convexPointList = []
-
 valXInsideConvexHull = []
 valYInsideConvexHull = []
-
 densityCalculated = False
-
 heatMapColorValues = []
-
 files = []
-
 filesXPoints = []
 filesYPoints = []
-
 filesXPointsCenter = []
 filesYPointsCenter = []
-
 readFilesLong = []
-
 schoolVelocity = 0
-
 timElapse = 0
-
 nameofFileFiltered = None
-
 perimeterSaved = False
 
 # Directorio por defecto, se puede modificar al renombrar el folder deseado
@@ -126,77 +100,60 @@ veldir_vec_v = []
 veldir_velocity = []
 veldir_angle = []
 veldir_position = []
-
 maxRangeValue = 255
-
 framesGenerated = False
-
 errorAnalyzing = False
-
 filasActuales = 0
 empty_row = True
-
 gifFileName = None
-
 formato = None
 
+
+# Variables para el calculo y mostrado de la superficie de una ROI seleccionada
+# por el usuario
 dist_pixeles = 0
 dist_cm = 0
-
 ratio_cm_pixel = 0
 ratio_cm_pixel_cuadrado = 0
-
 measure_pointList = []
-
 posOfArrays = []
-
 areaROI = 0
 areaROI_cm = 0
-
 cte_pos_x = 2
 cte_pos_y = 12
 
 
 
 
-
+# Definicion de la clase del menu de Preferencias dentro del apartado de Opciones
 class OptionsMenu(QtWidgets.QWidget):
 
     def __init__(self):
         super(OptionsMenu, self).__init__()
 
+        # Se definen todos los botones y apartados de configuracion dentro del
+        # menu de preferencias
         self.setWindowTitle('Preferences')
         self.setGeometry(800,300,100,300)
         self.labelling_title = QtWidgets.QLabel('Labelling')
         self.labelling_title.setStyleSheet("border-bottom-width: 1px; border-bottom-style: solid; border-radius: 0px; font: bold 14px")
         self.analysis_title = QtWidgets.QLabel('Analysis')
         self.analysis_title.setStyleSheet("border-bottom-width: 1px; border-bottom-style: solid; border-radius: 0px; font: bold 14px")
-
-
         self.savePreferencesButton = QPushButton('Save Preferences')
-
         self.labelled_data_color = QPushButton()
         self.labelled_data_color.setStyleSheet("background-color: black")
-
         self.perimeter_color = QPushButton()
         self.perimeter_color.setStyleSheet("background-color: green")
-
         self.vector1_color = QPushButton()
         self.vector1_color.setStyleSheet("background-color: red")
-
         self.vector2_color = QPushButton()
         self.vector2_color.setStyleSheet("background-color: blue")
-
         self.dot1_color = QPushButton()
         self.dot1_color.setStyleSheet("background-color: red")
-
         self.dot2_color = QPushButton()
         self.dot2_color.setStyleSheet("background-color: blue")
-
         self.layers_color = QPushButton()
         self.layers_color.setStyleSheet("background-color: blue")
-
-
         self.slider_layers = QSlider(Qt.Horizontal)
         self.slider_layers.setFocusPolicy(Qt.StrongFocus)
         self.slider_layers.setTickPosition(QSlider.TicksBelow)
@@ -204,10 +161,8 @@ class OptionsMenu(QtWidgets.QWidget):
         self.slider_layers.setSingleStep(1)
         self.slider_layers.setMaximum(255)
         #self.slider_layers.setValue(number_of_layers)
-
         self.labelled_analyzed_data_color = QPushButton()
         self.labelled_analyzed_data_color.setStyleSheet("background-color: green")
-
         self.labelled_data_label = QtWidgets.QLabel('Labelled data')
         self.labelled_analyzed_data_label = QtWidgets.QLabel('Labelled data analyzed')
         self.perimeter_label = QtWidgets.QLabel('Perimeter')
@@ -215,14 +170,12 @@ class OptionsMenu(QtWidgets.QWidget):
         self.vector2_label = QtWidgets.QLabel('Vector 2')
         self.dot1_label = QtWidgets.QLabel('Dot 1')
         self.dot2_label = QtWidgets.QLabel('Dot 2')
-
         self.layers_label = QtWidgets.QLabel('Number of layers')
         self.layers_value = QtWidgets.QLabel("0")
 
 
 
-        #Connect buttons
-
+        # Se conectan los diferentes elementos del menu de Preferencias
         self.labelled_data_color.clicked.connect(self.labelled_data_color_dialog)
         self.perimeter_color.clicked.connect(self.perimeter_color_dialog)
         self.vector1_color.clicked.connect(self.vector1_color_dialog)
@@ -230,52 +183,37 @@ class OptionsMenu(QtWidgets.QWidget):
         self.dot1_color.clicked.connect(self.dot1_color_dialog)
         self.dot2_color.clicked.connect(self.dot2_color_dialog)
         self.labelled_analyzed_data_color.clicked.connect(self.labelled_analyzed_data_color_dialog)
-
         self.layers_color.clicked.connect(self.layers_color_dialog)
-
         self.savePreferencesButton.clicked.connect(self.saveDataInTextFile)
-
         self.slider_layers.valueChanged.connect(self.changeValue)
 
-        # New layout
+        # Se añaden al layout los diferentes elementos del menu de Preferencias
         grid = QtWidgets.QGridLayout(self)
-
         grid.addWidget(self.labelling_title,0,0)
-
         grid.addWidget(self.labelled_data_label,1,0)
         grid.addWidget(self.labelled_data_color,1,1)
-
         grid.addWidget(self.analysis_title,2,0)
-
         grid.addWidget(self.labelled_analyzed_data_label,3,0)
         grid.addWidget(self.labelled_analyzed_data_color,3,1)
-
         grid.addWidget(self.perimeter_label,4,0)
         grid.addWidget(self.perimeter_color,4,1)
-
         grid.addWidget(self.vector1_label,5,0)
         grid.addWidget(self.vector1_color,5,1)
-
         grid.addWidget(self.vector2_label,6,0)
         grid.addWidget(self.vector2_color,6,1)
-
         grid.addWidget(self.dot1_label,7,0)
         grid.addWidget(self.dot1_color,7,1)
-
         grid.addWidget(self.dot2_label,8,0)
         grid.addWidget(self.dot2_color,8,1)
-
         grid.addWidget(self.layers_label,9,0)
-
         grid.addWidget(self.slider_layers,10,0)
         grid.addWidget(self.layers_value,10,1)
         grid.addWidget(self.layers_color,10,2)
-
-
         grid.addWidget(self.savePreferencesButton,11,0)
 
 
-
+        # En caso de que exista un fichero de configuracion previo, se cargan
+        # dichos valores a la aplicación
         if os.path.exists('config.txt') == True:
             #print('existe el fichero')
             global color_labelled_data
@@ -294,48 +232,39 @@ class OptionsMenu(QtWidgets.QWidget):
             #print(string)
             color_labelled_data = string[:-1]
             self.labelled_data_color.setStyleSheet("QWidget { background-color: %s}" % color_labelled_data)
-
             string = file.readline()
             #print(string)
             color_perimeter = string[:-1]
             self.perimeter_color.setStyleSheet("QWidget { background-color: %s}" % color_perimeter)
-
             string = file.readline()
             #print(string)
             color_vector1 = string[:-1]
             self.vector1_color.setStyleSheet("QWidget { background-color: %s}" % color_vector1)
-
             string = file.readline()
             #print(string)
             color_vector2 = string[:-1]
             self.vector2_color.setStyleSheet("QWidget { background-color: %s}" % color_vector2)
-
             string = file.readline()
             #print(string)
             color_dot1 = string[:-1]
             self.dot1_color.setStyleSheet("QWidget { background-color: %s}" % color_dot1)
-
             string = file.readline()
             #print(string)
             color_dot2 = string[:-1]
             self.dot2_color.setStyleSheet("QWidget { background-color: %s}" % color_dot2)
-
             string = file.readline()
             #print(string)
             color_labelled_analyzed_data = string[:-1]
             self.labelled_analyzed_data_color.setStyleSheet("QWidget { background-color: %s}" % color_labelled_analyzed_data)
-
             string = file.readline()
             #print(string)
             number_of_layers = int(string[:-1])
             self.layers_value.setText(str(number_of_layers))
             self.slider_layers.setValue(number_of_layers)
-
             string = file.readline()
             #print(string)
             color_layers = string[:-1]
             self.layers_color.setStyleSheet("QWidget { background-color: %s}" % color_layers)
-
             #print(color_labelled_data)
             #print(color_perimeter)
             #print(color_vector1)
@@ -345,7 +274,7 @@ class OptionsMenu(QtWidgets.QWidget):
             #print(color_labelled_analyzed_data)
             #print(str(number_of_layers))
             #print(color_layers)
-
+        # Si no existe el fichero de configuracion, se crea uno nuevo
         else:
             #print('no existe el fichero')
             color_labelled_data = self.labelled_data_color.palette().color(QtGui.QPalette.Base).name()
@@ -356,18 +285,16 @@ class OptionsMenu(QtWidgets.QWidget):
             color_dot2 = self.dot2_color.palette().color(QtGui.QPalette.Base).name()
             color_labelled_analyzed_data = self.labelled_analyzed_data_color.palette().color(QtGui.QPalette.Base).name()
             color_layers = self.layers_color.palette().color(QtGui.QPalette.Base).name()
-
             self.slider_layers.setValue(number_of_layers)
         #self.show()
 
+    # Funcion para cambiar el numero de capas de densidad
     def changeValue(self,val):
         global number_of_layers
         number_of_layers = val
         self.layers_value.setText(str(val))
 
-
-
-
+    # Funcion para almacenar el fichero de configuracion en el disco
     def saveDataInTextFile(self):
 
         global color_labelled_data
@@ -403,14 +330,17 @@ class OptionsMenu(QtWidgets.QWidget):
         file.write(color_labelled_analyzed_data+"\n")
         file.write(str(number_of_layers)+"\n")
         file.write(color_layers+"\n")
-
         file.close()
         self.hide()
 
-
+    # Funcion para escoger tonalidades de color elegidas por el usuario para
+    # los mapas de densidad
     def layers_color_dialog(self):
         global color_layers
         color_layers = QColorDialog.getColor()
+
+        # Si el color escogido por el usuario es valido se selecciona dicho color
+        # en caso contrario se carga uno por defecto
         if color_layers.isValid():
             #print(color_layers)
             self.layers_color.setStyleSheet("QWidget { background-color: %s}" % color_layers.name())
@@ -420,32 +350,30 @@ class OptionsMenu(QtWidgets.QWidget):
 
         #print(color_layers)
 
-        #Se buscan todas las tonalidades existentes desde la seleccionada
-
+        # Se buscan todas las tonalidades existentes desde la seleccionada
         parte_R = color_layers[1:3]
         #print(parte_R)
         cant_R = int(parte_R,16)
         #print(cant_R)
-
         parte_G = color_layers[3:5]
         #print(parte_G)
         cant_G = int(parte_G,16)
         #print(cant_G)
-
         parte_B = color_layers[5:7]
         #print(parte_B)
         cant_B = int(parte_B,16)
         #print(cant_B)
-
         maximum = self.maximumOfRGB(cant_R,cant_G,cant_B)
         self.slider_layers.setMaximum(maximum)
 
+    # Funcion para obtener el maximo entre las coordenadas R,G,B de un color
     def maximumOfRGB(self,r,g,b):
         list = [r,g,b]
         return max(list)
 
 
-
+    # Funcion para escoger el color deseado por el usuario para los datos de
+    # etiquetado
     def labelled_data_color_dialog(self):
         global color_labelled_data
         color_labelled_data = QColorDialog.getColor()
@@ -458,6 +386,8 @@ class OptionsMenu(QtWidgets.QWidget):
 
         #print(color_labelled_data)
 
+    # Funcion para escoger el color deseado por el usuario para los datos de
+    # perimetro
     def perimeter_color_dialog(self):
         global color_perimeter
         color_perimeter = QColorDialog.getColor()
@@ -470,6 +400,8 @@ class OptionsMenu(QtWidgets.QWidget):
 
         #print(color_perimeter)
 
+    # Funcion para escoger el color deseado por el usuario para los datos de
+    # los vectores - 1
     def vector1_color_dialog(self):
         global color_vector1
         color_vector1 = QColorDialog.getColor()
@@ -482,6 +414,8 @@ class OptionsMenu(QtWidgets.QWidget):
 
         #print(color_vector1)
 
+    # Funcion para escoger el color deseado por el usuario para los datos de
+    # los vectores - 2
     def vector2_color_dialog(self):
         global color_vector2
         color_vector2 = QColorDialog.getColor()
@@ -494,6 +428,8 @@ class OptionsMenu(QtWidgets.QWidget):
 
         #print(color_vector2)
 
+    # Funcion para escoger el color deseado por el usuario para los datos de
+    # los centros de cada animal etiquetado - 1
     def dot1_color_dialog(self):
         global color_dot1
         color_dot1 = QColorDialog.getColor()
@@ -506,6 +442,8 @@ class OptionsMenu(QtWidgets.QWidget):
 
         #print(color_dot1)
 
+    # Funcion para escoger el color deseado por el usuario para los datos de
+    # los centros de cada animal etiquetado - 2
     def dot2_color_dialog(self):
         global color_dot2
         color_dot2 = QColorDialog.getColor()
@@ -518,6 +456,8 @@ class OptionsMenu(QtWidgets.QWidget):
 
         #print(color_dot2)
 
+    # Funcion para escoger el color deseado por el usuario para los datos de
+    # analisis de los datos
     def labelled_analyzed_data_color_dialog(self):
         global color_labelled_analyzed_data
         color_labelled_analyzed_data = QColorDialog.getColor()
@@ -530,36 +470,31 @@ class OptionsMenu(QtWidgets.QWidget):
 
         #print(color_labelled_analyzed_data)
 
-
+# Definicion de la clase de la interfaz de Análisis Avanzada para el estudio
+# del movimiento de escuelas
 class WindowResults(QtWidgets.QWidget):
 
+    # Señales para comunicarse entre diferentes clases
     hideandshowSignal = QtCore.pyqtSignal()
-
     rePaintAfterDensity = QtCore.pyqtSignal()
 
+    # Inicializacion de la clase
     def __init__(self):
         super(WindowResults, self).__init__()
 
-
+        # Se definen todos los botones, etiquetas y listados de dicha interfaz
+        # avanzada
         self.setWindowTitle('Results of Analysis - Vectors')
         self.setGeometry(100,100,700,600) #600,600
         self.viewerRes = PhotoVectorViewer(self)
-
-
         self.savebtn = QPushButton('Save Analyzed Image')
         self.backtolabel = QPushButton('Back to Labelling Menu')
-
         self.savegifbtn = QPushButton('Save as gif')
         self.savegifbtn.setVisible(False)
-
         self.savevideobtn = QPushButton('Save as video')
         self.savevideobtn.setVisible(False)
-
-
-
         self.editPixMassCenter = QtWidgets.QLineEdit(self)
         self.editPixMassCenter.setReadOnly(True)
-
         self.centermassVals = QtWidgets.QLabel('Mass Center Coord: ')
 
         # Listado de checkboxs
@@ -567,49 +502,35 @@ class WindowResults(QtWidgets.QWidget):
         self.cb_analyzed = QCheckBox('Show analyzed data')
         self.cb_perimeter = QCheckBox('Show data perimeter')
         self.cb_density = QCheckBox('Show image density')
-
         self.cb_3Ddensity = QCheckBox('Show 3D map density')
 
+        # Se conectan los diferentes elementos
         self.cb_labelled.stateChanged.connect(self.drawStuff)
         self.cb_analyzed.stateChanged.connect(self.drawStuff)
         self.cb_perimeter.stateChanged.connect(self.drawStuff)
         self.cb_density.stateChanged.connect(self.drawHeatMap)
-
         self.cb_3Ddensity.stateChanged.connect(self.draw3DHeatMap)
-
         self.savebtn.clicked.connect(self.selecteds)
         self.backtolabel.clicked.connect(self.backmenu)
-
         self.viewerRes.editMassCenter.connect(self.editMassCenter)
         self.viewerRes.reDrawStuff.connect(self.drawStuff)
-
         self.viewerRes.editVelocityLabel.connect(self.editLabelVelocity)
-
         self.savegifbtn.clicked.connect(self.viewerRes.saveAnimation)
-
         self.savevideobtn.clicked.connect(self.viewerRes.saveVideo)
-
-
         self.rePaintAfterDensity.connect(self.viewerRes.rePaintAfterDensity)
 
-        # Arrange layout
-
+        # Se configura la disposicion de los diferentes elementos en la GUI
         MainLayout = QtWidgets.QHBoxLayout(self)
-
         VBlayout = QtWidgets.QVBoxLayout()
         VBlayout1 = QtWidgets.QVBoxLayout()
         HBlayout = QtWidgets.QHBoxLayout()
         HBlayout1 = QtWidgets.QHBoxLayout()
 
         HBlayout.addWidget(self.savebtn)
-
         HBlayout.addWidget(self.savegifbtn)
         HBlayout.addWidget(self.savevideobtn)
-
-
         HBlayout1.addWidget(self.centermassVals)
         HBlayout1.addWidget(self.editPixMassCenter)
-
         VBlayout.addWidget(self.viewerRes)
         VBlayout.addLayout(HBlayout1)
         VBlayout.addLayout(HBlayout)
@@ -618,72 +539,57 @@ class WindowResults(QtWidgets.QWidget):
         VBlayout1.addWidget(self.cb_analyzed)
         VBlayout1.addWidget(self.cb_perimeter)
         VBlayout1.addWidget(self.cb_density)
-
         VBlayout1.addWidget(self.cb_3Ddensity)
-
         VBlayout1.addStretch(1)
-
         VBlayout1.addWidget(self.backtolabel)
-
         MainLayout.addLayout(VBlayout)
         MainLayout.addLayout(VBlayout1)
 
         #self.show()
 
+    # Funcion para regresar a la Interfaz básica o de etiquetado
     def backmenu(self):
         global densityCalculated
         global perimeterSaved
 
+        # Se borran las imagenes de caché en caso de existir
         if densityCalculated == True:
             #print('Borrando imagen cache')
             os.remove("cache_heatmap.JPG")
         self.hide()
         self.hideandshowSignal.emit()
 
+        # Se reinician los checkbox y las variables de analisis pertinentes
         self.cb_labelled.setChecked(False)
         self.cb_analyzed.setChecked(False)
         self.cb_perimeter.setChecked(False)
         self.cb_density.setChecked(False)
-
         self.cb_3Ddensity.setChecked(False)
 
         densityCalculated = False
         perimeterSaved = False
 
-
-
-
+    # Funcion para guardar la imagen analizada en el disco
     def selecteds(self,q):
         self.viewerRes.saveImageAnalyzed()
 
+    # Funcion para pintar el mapa de densidad 3D
     def draw3DHeatMap(self):
-
         if self.cb_3Ddensity.isChecked():
-
             # Nos aseguramos de que se haya calculado anteriormente la densidad
             self.cb_density.setChecked(True)
             self.drawHeatMap()
             self.cb_density.setChecked(False)
-
             # Se calcula el mapa 3D
             self.viewerRes.Density3DProcess()
 
-
-
-
-
-
-
-
-
+    # Funcion para pintar el mapa de densidad 2D
     def drawHeatMap(self):
         global perAnalyze
 
         if self.cb_density.isChecked():
             #print('calc y mostrar densidad')
-
             if densityCalculated == False:
-
                 if perAnalyze == True:
                     self.pixmap = QPixmap(imagePath)
                     self.viewerRes.setPhoto(self.pixmap)
@@ -692,7 +598,6 @@ class WindowResults(QtWidgets.QWidget):
                     self.pixmap = QPixmap(imagePath)
                     self.viewerRes.setPhoto(self.pixmap)
                     self.viewerRes.DensityProcess(0)
-
             else:
                 self.pixmap = QPixmap("cache_heatmap.JPG")
                 self.viewerRes.setPhoto(self.pixmap)
@@ -704,27 +609,21 @@ class WindowResults(QtWidgets.QWidget):
             self.viewerRes.setPhoto(self.pixmap)
             self.rePaintAfterDensity.emit()
 
-
-
+    # Funcion de pintado de datos en la interfaz avanzada
     def drawStuff(self):
-
         self.viewerRes.resetView(3)
-
         if self.cb_labelled.isChecked():
             #print('pintamos labelled')
             self.viewerRes.drawLoadedData(0)
         else:
             self.viewerRes.resetView(0)
-
         if self.cb_analyzed.isChecked():
             #print('pintamos analyzed')
             self.viewerRes.drawLoadedData(1)
         else:
             self.viewerRes.resetView(1)
-
         if self.cb_perimeter.isChecked():
             #print('calc y dibujar perimetro')
-
             if perAnalyze == True:
                 self.viewerRes.ImageProcess(1,1)
             else:
@@ -733,48 +632,46 @@ class WindowResults(QtWidgets.QWidget):
             self.viewerRes.resetView(2)
             self.viewerRes.resetView(7)
 
+    # Funcion para editar el valor del dentro de masas
     def editMassCenter(self):
-
         self.editPixMassCenter.setText('%d, %d' % (valCenterMassX,valCenterMassY))
 
-
+    # Funcion para editar la etiqueta con la velocidad de la escuela
     def editLabelVelocity(self):
         global schoolVelocity
-
         self.centermassVals.setText("Average school velocity (pixels/s): ")
         self.editPixMassCenter.setText('%d' % schoolVelocity)
 
 
-
-
+# Clase que contiene la tabla con los datos analizados marcados por el usuario
 class DataResults(QtWidgets.QTableWidget):
-
+    # Se inicializa la clase
     def __init__(self, r, c):
         super(DataResults,self).__init__(r, c)
         self.setWindowTitle('Results of Analysis - Data')
         col_headers = ['Tail X', 'Tail Y', 'Head X', 'Head Y', 'X med', 'Y med','u','v','Index','Distance','Angle']
         self.setHorizontalHeaderLabels(col_headers)
         self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        # Se calculan las dimensiones de la ventana de forma dinamica en función
+        # de los datos que haya
         dim = self.calcDimension(r)
-
         if dim > 600:
             dim = 600
-
         self.setGeometry(750,100,1120,dim)
         self.show()
 
+    # Funcion para calcular las dimensiones de la tabla de datos
     def calcDimension(self,r):
         total = r*30+40
         return total
 
+    # Funcion para almacenar la tabla en el disco
     def save_sheet(self,var):
         #path = QFileDialog.getSaveFileName(self, 'Save data in CSV file', os.getcwd(), 'CSV(*.csv)')
-
         cacheDir = None
         cacheType = None
         cacheTitle = None
         cacheInfo = None
-
 
         if var == 0: #Datos sin analizar
             cacheDir = 'labelledData'
@@ -795,14 +692,12 @@ class DataResults(QtWidgets.QTableWidget):
 
         #Creamos directory o comprobamos si existe
         dirName = cacheDir
-
         if not os.path.exists(dirName):
             os.mkdir(dirName)
             #print("Directory ", dirName , "Created")
         else:
             pass
             #print("Directory ", dirName , " already exists")
-
         global nameofFileFiltered
         path = cacheDir + "/" + nameofFileFiltered + cacheType +".csv"
         if path != '':
@@ -817,22 +712,22 @@ class DataResults(QtWidgets.QTableWidget):
                         else:
                             row_data.append('')
                     writer.writerow(row_data)
-
         self.msg = QtWidgets.QMessageBox.about(self,cacheTitle,cacheInfo)
 
+# Clase que contiene la Interfaz avanzada con las opciones de analisis para el
+# estudio de colectivos
 class PhotoVectorViewer(QtWidgets.QGraphicsView):
-
+    # Se crean señales para comunicar diferentes clases
     editMassCenter = QtCore.pyqtSignal()
     reDrawStuff = QtCore.pyqtSignal()
-
     editVelocityLabel = QtCore.pyqtSignal()
     editVelDirTable = QtCore.pyqtSignal()
 
     global ratio_cm_pixel
-
+    # Funcion de inicializacion
     def __init__(self,parent):
         super(PhotoVectorViewer,self).__init__()
-
+        # Se inicializan las dimensiones, fotos, y datos de interes
         self.handDrag = False
         self._zoom = 0
         self._empty = True
@@ -846,12 +741,14 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(30, 30, 30)))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
-
         #self.show()
 
+
+    # Funcion que comprueba si existe una foto cargada en la interfaz
     def hasPhoto(self):
         return not self._empty
-    #Ajusta la imagen al rectangulo creado
+
+    # Funcion que ajusta la imagen al rectangulo diseñado para visualizar imagenes
     def fitInView(self, scale=True):
         rect = QtCore.QRectF(self._photo.pixmap().rect())
         if not rect.isNull():
@@ -865,7 +762,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                              viewrect.height() / scenerect.height())
                 self.scale(factor, factor)
             self._zoom = 0
-        #Cambia el raton de un tipo a otro y abre la imagen
+
+    # Función que asigna la imagen al rectangulo diseñado para visualizar imagenes
     def setPhoto(self, pixmap=None):
         self._zoom = 0
         if pixmap and not pixmap.isNull():
@@ -884,7 +782,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             self._photo.setPixmap(QtGui.QPixmap())
         self.fitInView()
 
-    #Func para hacer zoom con ruleta
+    # Funcion para hacer zoom en la imagen con la ruleta
     def wheelEvent(self, event):
         if self.hasPhoto():
             if event.angleDelta().y() > 0:
@@ -903,26 +801,22 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         #print(self._zoom)
         self.rePaintWithZoom(self._zoom)
 
-
+    # Funcion para repintar los datos en funcion del zoom tras pintar la densidad
     def rePaintAfterDensity(self):
 
         self.rePaintWithZoom(self._zoom)
 
-
+    # Funcion para repintar los datos en funcion del zoom
     def rePaintWithZoom(self,zoom):
 
         global calcGrosorAnalyzed
         global perAnalyze
-
         global convexXHull
         del convexXHull[:]
         global convexYHull
         del convexYHull[:]
-
         x = self._scene.width()
         y = self._scene.height()
-
-
         zoomPararestar = 9
         calcGrosor_max = 10
 
@@ -946,21 +840,22 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
         #print('El nuevo grosor para pintar es')
         #print(calcGrosorAnalyzed)
-
         #if perAnalyze == False:
         self.resetView(3)
         self.resetView(2)
         self.resetView(1)
         self.resetView(0)
-
         self.reDrawStuff.emit()
 
         #elif perAnalyze == True:
         #    self.resetView(3)
         #    self.drawPerimeter()
 
+
+    # Funcion para generar fotogramas analizados y almacenarlos individualmente
     def generateFrames(self):
 
+        # Se modifica el contenido de las variables listadas debajo
         global filesXPoints
         global filesYPoints
         global filesXPointsCenter
@@ -974,22 +869,17 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global framesGenerated
         global veldir_angle
         global veldir_velocity
-
         global gifFileName
-
         global formato
 
         c = QtGui.QColor(color_perimeter)
         penGreen = QtGui.QPen(Qt.red,3)
         penPerimetro = QtGui.QPen(c,3)
-
         cantidad = len(filesXPoints)
         #print(cantidad)
+
         #Pintamos los perimetros y luego los puntos centrales en la imagen
-
         valorInicialRango = 0
-
-        #Se generan los frames para hacer el gif
 
         #Creamos directory o comprobamos si existe
         dirName = "framegeneratorGif"
@@ -1001,7 +891,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             pass
             #print("Directory ", dirName , " already exists")
 
-        #print files
+        # Se muestran los ficheros
         for j in tqdm(range(0,len(readFilesLong))):
 
             nombreFichero = files[j].split('.')[0]
@@ -1033,19 +923,15 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 self._scene.addItem(linea_item)
                 self.setScene(self._scene)
 
-
-
             valXTail = int(filesXPoints[valorInicialRango])
             valYTail = int(filesYPoints[valorInicialRango])
             valXHead = int(filesXPoints[readFilesLong[j]-1])
             valYHead = int(filesYPoints[readFilesLong[j]-1])
-
             linea_item = QtWidgets.QGraphicsLineItem(valXTail,valYTail,valXHead,valYHead)
             linea_item.setPen(penPerimetro)
             linea_item.setData(1,6)
             self._scene.addItem(linea_item)
             self.setScene(self._scene)
-
 
             # Dibujo del centroide
             for k in range(0,j+1):
@@ -1059,15 +945,14 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
                 self._scene.addItem(ellipse_item)
                 self.setScene(self._scene)
+
             # Dibujo flecha
             for i in range(0,j):
 
                 valXHead = int(filesXPointsCenter[i+1])
                 valXTail = int(filesXPointsCenter[i])
-
                 valYHead = int(filesYPointsCenter[i+1])
                 valYTail = int(filesYPointsCenter[i])
-
                 linea_item = QtWidgets.QGraphicsLineItem(valXTail,valYTail,valXHead,valYHead)
                 linea_item.setData(1,6)
                 linea_item.setPen(penGreen)
@@ -1095,23 +980,17 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 linea_item_flecha_1.setPen(penGreen)
                 linea_item_flecha_2 = QtWidgets.QGraphicsLineItem(vector_flecha_2)
                 linea_item_flecha_2.setPen(penGreen)
-
                 linea_item_flecha_1.setData(1,6)
                 linea_item_flecha_2.setData(1,6)
-
                 self._scene.addItem(linea_item)
                 self._scene.addItem(linea_item_flecha_1)
                 self._scene.addItem(linea_item_flecha_2)
-
                 self.setScene(self._scene)
-            # Dibujo texto
+            # Dibujo del texto en el fotograma
             for i in range(j-1,j):
 
                 separacion = int( self._scene.height() / 195 )
-
-
                 #print i, veldir_velocity[i]
-
                 if i == -1:
                     texto = QtWidgets.QGraphicsTextItem(" ")
                 elif i == 0:
@@ -1122,25 +1001,22 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
                 font = QFont()
                 font.setBold(True)
-
                 texto.setFont(font)
                 self._scene.addItem(texto)
                 self.setScene(self._scene)
 
-
-
             valorInicialRango = readFilesLong[j]
 
-            #guardo cada fotograma generado del gif
+            # Se guarda cada fotograma generado del gif
             rect = QtCore.QRectF(self._photo.pixmap().rect())
             image = QtGui.QImage(rect.width(),rect.height(), QImage.Format_ARGB32_Premultiplied)
             painter = QtGui.QPainter(image)
             self._scene.render(painter)
             painter.end()
-
             image.save("framegeneratorGif/"+nombreFichero+"_frameGif"+".JPG")
         framesGenerated = True
 
+    # Funcion para guardar el analisis en formato GIF
     def saveAnimation(self):
         global framesGenerated
         global gifFileName
@@ -1149,21 +1025,15 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             self.generateFrames()
 
         #Se crea el gif y se guarda
-
         gifFramesDic = "framegeneratorGif/"
-
         imagesFrames = []
-
         pathArray = []
 
         for file_name in os.listdir(gifFramesDic):
             if file_name.endswith('.JPG'):
                 file_path = os.path.join(gifFramesDic,file_name)
-
                 #print file_path
-
                 pathArray.append(file_path)
-
 
         pathArray = sorted(pathArray)
         #print pathArray
@@ -1182,13 +1052,12 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             #print("Directory ", dirName , " already exists")
 
         # Se pide el nombre del gif y se ajusta duracion para crearlo
-
         gifFileName = gifFileName[:-1]
-
         for i in tqdm(range(1)):
             #imageio.mimsave('generatedGifs/gifDePrueba.gif', imagesFrames, duration = 1)
             imageio.mimsave('generatedGifs/'+gifFileName+'_animation.gif', imagesFrames, duration = timElapse)
 
+    # Funcion para dibujar la velocidad y el angulo de la escuela analizada
     def drawVelandDir(self):
         global filesXPoints
         global filesYPoints
@@ -1196,16 +1065,11 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global filesYPointsCenter
         global color_perimeter
         global readFilesLong
-
         global files
         global timElapse
-
         #print readFilesLong
-
         global renameFolderName
-
         global formato
-
         #timElapse, okPressed = QInputDialog.getDouble(self, "Frame time lapse", "Timelapse(s):")
 
         #if okPressed:
@@ -1214,16 +1078,12 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         c = QtGui.QColor(color_perimeter)
         penGreen = QtGui.QPen(Qt.red,3)
         penPerimetro = QtGui.QPen(c,3)
-
         cantidad = len(filesXPoints)
         #print(cantidad)
         #Pintamos los perimetros y luego los puntos centrales en la imagen
-
         valorInicialRango = 0
-
         #Se dibuja todo de nuevo para tenerlo completo
         nombreFichero = files[-1].split('_')[0]
-
         # Se busca el formato de las imagenes contenidas en la carpeta de
         # muestras
         files = sorted(os.listdir(renameFolderName))
@@ -1236,15 +1096,10 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         #print fondo
         self.pixmap = QPixmap(fondo)
         self.setPhoto(self.pixmap)
-
         valorInicialRango = 0
 
         for j in range(0,len(readFilesLong)):
-
-
-
             for i in range(valorInicialRango,readFilesLong[j]-1):
-
                 #print "El rango actual es de ", valorInicialRango, readFilesLong[j]-1
                 valXTail = int(filesXPoints[i])
                 valYTail = int(filesYPoints[i])
@@ -1260,48 +1115,38 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 self._scene.addItem(linea_item)
                 self.setScene(self._scene)
 
-
             valXTail = int(filesXPoints[valorInicialRango])
             valYTail = int(filesYPoints[valorInicialRango])
             valXHead = int(filesXPoints[readFilesLong[j]-1])
             valYHead = int(filesYPoints[readFilesLong[j]-1])
-
             linea_item = QtWidgets.QGraphicsLineItem(valXTail,valYTail,valXHead,valYHead)
             linea_item.setPen(penPerimetro)
             linea_item.setData(1,6)
             self._scene.addItem(linea_item)
             self.setScene(self._scene)
-
             valorInicialRango = readFilesLong[j]
-
 
         #Se dibujan centroides
         for i in range(0,len(filesXPointsCenter)):
             rad = 5.0 #1.0
             brush = QtGui.QBrush(Qt.SolidPattern)
-
             ellipse_item = QtWidgets.QGraphicsEllipseItem(int(filesXPointsCenter[i])-rad,int(filesYPointsCenter[i])-rad,rad*2.0,rad*2.0)
             ellipse_item.setPen(penGreen)
             ellipse_item.setBrush(brush)
             ellipse_item.setData(1,6)
-
             self._scene.addItem(ellipse_item)
             self.setScene(self._scene)
-
 
         #Se dibujan lineas centroide
         for i in range(0,len(filesXPointsCenter)-1):
 
             valXHead = int(filesXPointsCenter[i+1])
             valXTail = int(filesXPointsCenter[i])
-
             valYHead = int(filesYPointsCenter[i+1])
             valYTail = int(filesYPointsCenter[i])
-
             linea_item = QtWidgets.QGraphicsLineItem(valXTail,valYTail,valXHead,valYHead)
             linea_item.setData(1,6)
             linea_item.setPen(penGreen)
-
             dX = valXHead - valXTail
             dY = valYHead - valYTail
             Len = sqrt(dX* dX + dY * dY)
@@ -1320,31 +1165,26 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
             vector_flecha_1 = QtCore.QLineF(valXHead,valYHead,leftX,leftY)
             vector_flecha_2 = QtCore.QLineF(valXHead,valYHead,rightX,rightY)
-
             linea_item_flecha_1 = QtWidgets.QGraphicsLineItem(vector_flecha_1)
             linea_item_flecha_1.setPen(penGreen)
             linea_item_flecha_2 = QtWidgets.QGraphicsLineItem(vector_flecha_2)
             linea_item_flecha_2.setPen(penGreen)
-
             linea_item_flecha_1.setData(1,6)
             linea_item_flecha_2.setData(1,6)
-
             self._scene.addItem(linea_item)
             self._scene.addItem(linea_item_flecha_1)
             self._scene.addItem(linea_item_flecha_2)
-
             self.setScene(self._scene)
 
         #Se calcula todo y se completa la tabla de datos
         self.showandCalcVel()
 
-
+    # Funcion para calcular la velocidad y añadirla a la tabla de datos
     def showandCalcVel(self):
         global timElapse
         global filesXPointsCenter
         global filesYPointsCenter
         global schoolVelocity
-
         global veldir_vec_v
         global veldir_vec_u
         global veldir_angle
@@ -1352,7 +1192,6 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global veldir_position
 
         self.cont = True
-
         timElapse, okPressed = QInputDialog.getDouble(self, "Frame time lapse", "Timelapse(s):")
 
         if okPressed and timElapse != 0.0:
@@ -1362,106 +1201,76 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             self.msg = QtWidgets.QMessageBox.about(self,'Cancelling...','0.0 is not a valid number')
             self.cont = False
 
-
-
         if self.cont == True:
-
             distanciaPixeles = 0
-
             for i in range(0,len(filesXPointsCenter)-1):
 
                 valXHead = int(filesXPointsCenter[i+1])
                 valXTail = int(filesXPointsCenter[i])
-
                 valYHead = int(filesYPointsCenter[i+1])
                 valYTail = int(filesYPointsCenter[i])
-
                 dX = valXHead - valXTail
                 dY = valYHead - valYTail
                 dist = int(sqrt(dX* dX + dY * dY))
-
                 veldir_position.append(dist)
 
             #print veldir_position
-
             #valorDiv = int( distanciaPixeles / (len(filesXPointsCenter)-1))
-
             #print valorDiv
 
             for i in range(0,len(veldir_position)):
-
                 schoolVelocity = int(veldir_position[i] / timElapse)
-
                 veldir_velocity.append(schoolVelocity)
-
             #print veldir_velocity
 
 
             for i in range(0,len(filesXPointsCenter)-1):
-
                 valXHead = int(filesXPointsCenter[i+1])
                 valXTail = int(filesXPointsCenter[i])
-
                 valYHead = int(filesYPointsCenter[i+1])
                 valYTail = int(filesYPointsCenter[i])
-
                 vecU = int(valYHead-valYTail)
                 vecV = int(valXHead-valXTail)
-
                 veldir_vec_u.append(vecU)
                 veldir_vec_v.append(vecV)
-
 
             #print veldir_vec_u
             #print veldir_vec_v
 
-
-            #Calcular angulos
-
+            # Se calculan los angulos entre los diferentes grupos de animales
             for i in range(0,len(veldir_vec_u)-1):
                 valU = veldir_vec_u[i]
                 valV = veldir_vec_v[i]
-
                 vector_1 = (valU,valV)
-
                 valU_neigh = veldir_vec_u[i+1]
                 valV_neigh = veldir_vec_v[i+1]
-
                 vector_2 = (valU_neigh,valV_neigh)
-
                 angulo_rad = self.angle_between(vector_1,vector_2)
-
                 angulo_degree = np.rad2deg(angulo_rad)
 
                 #Se redondea el angulo a dos decimales
                 angulo_degree = round(angulo_degree,2)
-
                 veldir_angle.append(angulo_degree)
-
 
             #print veldir_angle
 
             #Se actualiza la tabla y se guarda en excel
-
             self.editVelDirTable.emit()
 
             #Se pintan los resultados
-
             self.paintSchoolResults()
 
+    # Funcion para pintar los resultados en la imagen
     def paintSchoolResults(self):
-
         global veldir_angle
         global veldir_velocity
         global filesXPointsCenter
         global filesYPointsCenter
-
         #print self._scene.height()
 
         separacion = int( self._scene.height() / 195 )
 
         for i in range(0,len(veldir_velocity)):
-
             if i == -1:
                 texto = QtWidgets.QGraphicsTextItem(" ")
             elif i == 0:
@@ -1469,35 +1278,33 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             else:
                 texto = QtWidgets.QGraphicsTextItem("v: "+str(veldir_velocity[i])+" , a: "+ str(veldir_angle[i-1]))
             texto.setPos(int(filesXPointsCenter[i+1]),int(filesYPointsCenter[i+1])-separacion)
-
             font = QFont()
             font.setBold(True)
-
             texto.setFont(font)
             self._scene.addItem(texto)
             self.setScene(self._scene)
 
+    # Funcion para calcular el vector unitario
     def unit_vector(self,vector):
         return vector / np.linalg.norm(vector)
 
+    # Funcion para calcular el angulo entre dos vectores
     def angle_between(self,v1, v2):
         v1_u = self.unit_vector(v1)
         v2_u = self.unit_vector(v2)
         return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
-
+    # Funcion para guardar en formato de video el estudio del movimiento
+    # de la agrupacion de animales
     def saveVideo(self):
         global framesGenerated
-
 
         if framesGenerated == False:
             self.generateFrames()
 
         image_folder = 'framegeneratorGif'
         video_name = 'generatedVideos/video.avi'
-
         images = [img for img in os.listdir(image_folder) if img.endswith(".JPG")]
-
         images = sorted(images)
 
         #Creamos directory o comprobamos si existe
@@ -1513,16 +1320,13 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
         frame = cv2.imread(os.path.join(image_folder,images[0]))
         height,width,layers = frame.shape
-
         video = cv2.VideoWriter(video_name,0,1,(width,height))
-
         for image in images:
             video.write(cv2.imread(os.path.join(image_folder,image)))
-
         cv2.destroyAllWindows
         video.release()
 
-
+    # Funcion para calcular la velocidad y la dirección
     def calculateVelandDir(self):
         global files
         global filesXPoints
@@ -1532,57 +1336,42 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global color_perimeter
         global readFilesLong
 
-        #print('Hola caracola')
-
-        #Se meten todos los ficheros a analizar al array de ficheros
+        #Se met en todos los ficheros a analizar al array de ficheros
         for i in os.listdir("perimeterData"):
             if i.endswith('.txt'):
                 files.append(i)
                 #print("Archivo ", i , "added")
-        #Se va pintando uno a uno
+        # Se van pintando uno a uno
         #print files
 
         files = sorted(files)
 
         for i in range(0,len(files)):
-
             archiv = open("perimeterData/"+str(files[i]),"r")
             string = "a"
             #print("Se imprime el archivo", files[i])
             for reader in archiv:
                 string = reader
-
                 #print string
                 valueX = string.split(',')[0]
                 valueY = string.split(',')[1]
-
                 #print valueX , valueY
-
                 filesXPoints.append(int(valueX))
-
                 filesYPoints.append(int(valueY))
-
 
             del filesXPoints[-1]
             del filesYPoints[-1]
 
-
             longit = len(filesXPoints)
-
             readFilesLong.append(longit)
-
             archiv2 = open("perimeterData/"+str(files[i]),"r")
             strings = archiv2.readlines()
-
             strings = strings[-1]
-
             valueX = strings.split(',')[0]
             valueY = strings.split(',')[1]
             valueY = valueY[:-1]
-
             filesXPointsCenter.append(valueX)
             filesYPointsCenter.append(valueY)
-
             archiv.close()
             archiv2.close()
 
@@ -1604,6 +1393,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         #Despues se calcula la velocidad en pixeles/segundo
         self.drawVelandDir()
 
+    # Funcion para guardar la imagen analizada en el disco
     def saveImageAnalyzed(self):
         path, _ = QFileDialog.getSaveFileName(self, 'Save analyzed image', os.getcwd(), 'JPG(*.JPG)')
         rect = QtCore.QRectF(self._photo.pixmap().rect())
@@ -1619,7 +1409,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             image = self.grab().toImage()
         image.save(str(path))
 
-
+    # Funcion para reiniciar el zoom en la imagen
     def resetView(self,num):
 
         itemlist = self._scene.items()
@@ -1633,6 +1423,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 if items.data(1) == num:
                     self._scene.removeItem(items)
 
+    # Funcion para calcular la mediana de los datos
     def calcMedian(self):
         global sizes
         global average_size
@@ -1643,7 +1434,6 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             valYTail = float(valuesYTail[i])
             valXHead = float(valuesXHead[i])
             valYHead = float(valuesYHead[i])
-
             dX = valXHead - valXTail
             dY = valYHead - valYTail
             Len = sqrt(dX* dX + dY * dY)
@@ -1657,22 +1447,23 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         #print(average_size)
         #print(average_angle)
 
+    # Funcion para convertir del formato QImage de PyQt5 al formato Mat
+    # admitido por OpenCV (cv2)
     def convertQImageToMat(self,incomingImage):
 
         incomingImage = incomingImage.convertToFormat(4)
-
         width = incomingImage.width()
         height = incomingImage.height()
-
         ptr = incomingImage.bits()
         ptr.setsize(incomingImage.byteCount())
         arr = np.array(ptr).reshape(height,width,4)
         return arr
 
+    # Funcion para calcular el mapa de densidad 3D
     def Density3DProcess(self):
         global posOfArrays
         global v_values
-        print('Se calcula el plot en 3D')
+        #print('Se calcula el plot en 3D')
 
         fig = plt.figure()
         ax = Axes3D(fig)
@@ -1681,16 +1472,12 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         plt.show()
 
 
-
-        # Se necesitan los puntos y sus intensidades en V: x,y,intensidad
-
-
+    # Funcion para calcular el mapa de densidad 2D
     def DensityProcess(self,var):
 
         #Para corregir el bug de que coja mal el rectangulo a analizar
         self.pixmap = QPixmap(imagePath)
         self._photo.setPixmap(self.pixmap)
-
         rect = QtCore.QRectF(self._photo.pixmap().rect())
         image = QtGui.QImage(rect.width(),rect.height(), QImage.Format_ARGB32_Premultiplied)
         painter = QtGui.QPainter(image)
@@ -1699,69 +1486,49 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         #image = self.grab().toImage()
         imageReConverted = self.convertQImageToMat(image)
 
-
+        # Se vacian los listados en caso de haberlo calculado previamente
+        # y se inicializan para poder almcenar datos de nuevo
         global posOfArrays
-
         global s_values
         del s_values[:]
         global valXInsideConvexHull
         global valYInsideConvexHull
         global v_values
         del v_values[:]
-
         global convexXHull
         del convexXHull[:]
         global convexYHull
         del convexYHull[:]
-
         global densityCalculated
-
         global heatMapColorValues
-
         global number_of_layers
-
         global valuesXPerimeter
         global valuesYPerimeter
-
         global convexPointList
-
         global perimeterPointList
 
         #img_original = cv2.imread(imagePath)
-
         #scale_percent = 25
         #width = int(imageReConverted.shape[1] * scale_percent / 100)
         #height = int(imageReConverted.shape[0] * scale_percent / 100)
         #dim = (width, height)
         #resized_img_original = cv2.resize(imageReConverted,dim,interpolation = cv2.INTER_AREA)
-
-
         #imageReConverted = resized_img_original
-
         #rotated_img_original = imutils.rotate(img_original,90)
-
-
-
         imageFiltered = cv2.blur(imageReConverted,(5,5)) #15,15 o 10,10
         #imageFiltered = cv2.GaussianBlur(imageReConverted,(5,5),0)
         #imageFiltered = cv2.medianBlur(imageReConverted,5)
-
         #hsv_img_original = cv2.cvtColor(imageFiltered, cv2.COLOR_RGB2HSV)
         #h,s,v = cv2.split(hsv_img_original)
-
         #print('Dimensiones imagen imageReConverted')
         height,width,channels = imageReConverted.shape
         #print height, width, channels
-
         #print('Dimensiones imagen resized_img_original')
         #height,width = resized_img_original.shape
         #print height, width
-
         #print('Dimensiones imagen hsv')
-
         #height,width = hsv_img_original.shape
         #print height, width
-
         #gray_img_original = cv2.cvtColor(resized_img_original, cv2.COLOR_BGR2GRAY)
         #(minVal,maxVal,minLoc,maxLoc) = cv2.minMaxLoc(s)
         #print('min S val')
@@ -1772,210 +1539,165 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         #print(minLoc)
         #print(maxLoc)
 
-
         if var == 0:
-
             hull = ConvexHull(midPointList)
             long = len(hull.vertices)
-
             for i in range(0,long):
-
                 valXTail = int(valuesXMed[hull.vertices[i]])
                 valYTail = int(valuesYMed[hull.vertices[i]])
 
                 convexXHull.append(valXTail)
                 convexYHull.append(valYTail)
-
                 point = [valXTail,valYTail]
                 convexPointList.append(point)
 
             #print('Valores puntos array convex')
             #print(convexPointList)
-
             #print('Valores vertices convex hull X e Y')
             #print(convexXHull)
             #print(convexYHull)
-
             #print('Valores max min X convex hull')
             minconvexValX = min(convexXHull)
             maxconvexValX = max(convexXHull)
             #print(minconvexValX)
             #print(maxconvexValX)
-
             #print('Valores max min Y convex hull')
             minconvexValY = min(convexYHull)
             maxconvexValY = max(convexYHull)
             #print(minconvexValY)
             #print(maxconvexValY)
-
             #print('Numero de vertices en el Convex Hull')
             #print(long)
-
             listadoDePuntos = convexPointList
-
             #print(convexPointList)
         elif var == 1:
             #print(perimeterPointList)
-
             listadoDePuntos = perimeterPointList
 
         #Una vez obtenidos puntos ConvexHull, buscamos obtener las ROI
-
         mask = np.zeros(imageFiltered.shape, dtype=np.uint8)
-
         roi_corners = np.array(listadoDePuntos)
-
         channel_count = imageFiltered.shape[2]
-
         ignore_mask_color = (255,)*channel_count
 
         cv2.fillConvexPoly(mask,roi_corners,ignore_mask_color)
 
         masked_image = cv2.bitwise_and(imageFiltered,mask)
-
         hsv_img_original = cv2.cvtColor(masked_image, cv2.COLOR_RGB2HSV)
         h,s,v = cv2.split(hsv_img_original)
-
-
+        # Funcion para obtener los valores HEX de la gama de colores
         self.pruebaHexValuesArray()
 
-        posOfArrays = np.where(v > 0) #index en X,Y de los puntos mayores a 0
+        posOfArrays = np.where(v > 0) # Index en X,Y de los puntos mayores a 0
 
+        # Se buscan los valores MAX y MIN de la componente V de la imagen HSV
+        # dichos valores se buscan solo en la zona de la ROI no en toda la imagen
         v_val_max = np.amax(v)
         v_val_min = np.amin(v[np.where(v>0)]) #no de toda la imagen sino de nuestra zona
 
         #print(posOfArrays[0])
-
         #print(posOfArrays[1])
-
         #print(posOfArrays[0][0])
 
         #Pintar directamente segun el valor de la S que se lea de las posiciones cuyo valor de S es mayor que cero
-
         for i in tqdm(range(0,len(posOfArrays[0]))):
             valordeV = v[posOfArrays[0][i],posOfArrays[1][i]]
             posArray = self.mapeador(valordeV,v_val_min,v_val_max,0,number_of_layers-1)
             colour = str(heatMapColorValues[posArray])
             #print colour
             #Descompongo color en rgb
-
             v_values.append(valordeV)
-
             parte_R = colour.split(',')[0]
-
             #parte_R = colour[1:3]
             #print(parte_R)
             cant_R = int(parte_R)
             #print(cant_R)
-
             parte_G = colour.split(',')[1]
             #print(parte_G)
             cant_G = int(parte_G)
             #print(cant_G)
-
             parte_B = colour.split(',')[2]
             #print(parte_B)
             cant_B = int(parte_B)
             #print(cant_B)
-
             #imageReConverted[500,500] = (50,50,50,50)
             imageReConverted[posOfArrays[0][i],posOfArrays[1][i]] = (cant_B,cant_G,cant_R,1)
             #cv2.circle(imageReConverted,(posOfArrays[1][i],posOfArrays[0][i]),1,(cant_B,cant_G,cant_R),-1)
-
         cv2.imwrite('cache_heatmap.JPG',imageReConverted)
-
         # Se guarda el mapa de calor solo para hacer prueba de gif
         #cv2.imwrite('mapa_calor.JPG',imageReConverted)
-
         self.pixmap = QPixmap("cache_heatmap.JPG")
         self.setPhoto(self.pixmap)
-
         densityCalculated = True
-
 
         #cv2.namedWindow('original', cv2.WINDOW_NORMAL)
         #cv2.resizeWindow('original',600,600)
         #cv2.moveWindow('original',200,100)
         #cv2.imshow('original',imageReConverted)
-
         #cv2.namedWindow('filtered', cv2.WINDOW_NORMAL)
         #cv2.resizeWindow('filtered',600,600)
         #cv2.moveWindow('filtered',200,100)
         #cv2.imshow('filtered',imageFiltered)
-
-
         #cv2.namedWindow('masked_image', cv2.WINDOW_NORMAL)
         #cv2.resizeWindow('masked_image',600,600)
         #cv2.moveWindow('masked_image',200,100)
         #cv2.imshow('masked_image',masked_image)
-
         #cv2.namedWindow('v', cv2.WINDOW_NORMAL)
         #cv2.resizeWindow('v',600,600)
         #cv2.moveWindow('v',200,100)
         #cv2.imshow('v',v)
 
-
-
+    # Funcion para interpolar valores
     def mapeador(self, x,in_min,in_max,out_min,out_max):
-
         return int((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
 
+    # Funcion para generar valores HEX a partir de RGB
     def pruebaHexValuesArray(self):
         global heatMapColorValues
         global number_of_layers
         global color_layers
         global maxRangeValue
 
-
         parte_R = color_layers[1:3]
         #print(parte_R)
         cant_R = int(parte_R,16)
         #print(cant_R)
-
         parte_G = color_layers[3:5]
         #print(parte_G)
         cant_G = int(parte_G,16)
         #print(cant_G)
-
         parte_B = color_layers[5:7]
         #print(parte_B)
         cant_B = int(parte_B,16)
         #print(cant_B)
-
         maximum = self.maximumOfRGB(cant_R,cant_G,cant_B)
 
         for i in range(0,number_of_layers):
-
             escalar = int(maxRangeValue/number_of_layers)*i
-
             #value = hex(escalar*i)[2:]
-
             if maximum == cant_R:
                 value_string = str(cant_R)+","+str(escalar)+","+str(escalar)
             elif maximum == cant_G:
                 value_string = str(escalar)+","+str(cant_G)+","+str(escalar)
             elif maximum == cant_B:
                 value_string = str(escalar)+","+str(escalar)+","+str(cant_B)
-
             #print i , str(escalar), value_string
             heatMapColorValues.append(value_string)
 
-
         #Se invierte el array de capas de  color (al final no)
         #heatMapColorValues.reverse()
-
         #print heatMapColorValues
         #coger los cachos dinamicamente
 
-
+    # Funcion para obtener el maximo en las componentes R,G,B de una imagen
     def maximumOfRGB(self,r,g,b):
         list = [r,g,b]
         return max(list)
 
+    # Funcion para calcular y pintar los datos de analisis de una imagen
     def ImageProcess(self,var,pintar):
         global valCenterMassX
         global valCenterMassY
-
         global valuesXHead
         global valuesYHead
         global valuesYTail
@@ -1987,25 +1709,18 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global color_dot1
         global color_dot2
         global color_labelled_analyzed_data
-
         global convexXHull
         global convexYHull
-
         global perimeterSaved
-
         global valuesXPerimeter
         global valuesYPerimeter
-
         global valuesXMed
         global valuesYMed
-
         global midPointList
-
         global ratio_cm_pixel
         global ratio_cm_pixel_cuadrado
         global areaROI
         global areaROI_cm
-
 
         if var == 0:
             valCenterMassX = statistics.mean(valuesXMed)
@@ -2016,12 +1731,10 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
         #print('Mid Point List')
         #print(midPointList)
-
         #print('Mass Center X')
         #print(int(valCenterMassX))
         #print('Mass Center Y')
         #print(int(valCenterMassY))
-
         self.editMassCenter.emit()
 
         # Dibujar punto medio
@@ -2037,50 +1750,35 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             ellipse_item.setPen(penGreen)
             ellipse_item.setBrush(brush)
             ellipse_item.setData(1,2)
-
-
             self._scene.addItem(ellipse_item)
             self.setScene(self._scene)
 
         if var == 0: #Caso normal de etiquetado
-
             hull = ConvexHull(midPointList)
-
             #print(hull.vertices)
-
             #print('cantidad de tiburones')
-
             #print(tiburonesTotales)
-
             #print("List values XTail: ", valuesXTail[0:tiburonesTotales])
             #print("List values YTail: ", valuesYTail[0:tiburonesTotales])
             #print("List values XHead: ", valuesXHead[0:tiburonesTotales])
             #print("List values YHead: ", valuesYHead[0:tiburonesTotales])
-
             #print("List values XMed: ", valuesXMed[0:tiburonesTotales])
             #print("List values YMed: ", valuesYMed[0:tiburonesTotales])
             #print("List hull Vertices", hull.vertices)
-
             #print(hull.points[0,1])
-
             #print(len(hull.points))
-
             long = len(hull.vertices)
-
             #print('Cantidad vertices en el convex hull')
             #print long
 
             for i in range(0,long-1):
-
                 #print('Llego hasta: ', i)
                 valXTail = int(valuesXMed[hull.vertices[i]])
                 valYTail = int(valuesYMed[hull.vertices[i]])
                 valXHead = int(valuesXMed[hull.vertices[i+1]])
                 valYHead = int(valuesYMed[hull.vertices[i+1]])
-
                 convexXHull.append(valXTail)
                 convexYHull.append(valYTail)
-
                 #print(valXTail)
                 #print(valYTail)
                 #print(valXHead)
@@ -2097,7 +1795,6 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             valYTail = int(valuesYMed[hull.vertices[0]])
             valXHead = int(valuesXMed[hull.vertices[long-1]])
             valYHead = int(valuesYMed[hull.vertices[long-1]])
-
             convexXHull.append(valXHead)
             convexYHull.append(valYHead)
 
@@ -2110,18 +1807,15 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
             #print(convexXHull)
             #print(convexYHull)
-
             #print('Cantidad vertices Convex Hull')
             #print(long)
-
             #print(imagePath)
             nameofFile = imagePath.split('/')[-1]
             nameofFileFiltered = nameofFile.split('.')[0]
             #print(nameofFileFiltered)
 
-
             if perimeterSaved == False:
-                #Creamos directory o comprobamos si existe
+                # Creamos directory o comprobamos si existe
                 dirName = 'perimeterData'
 
                 if not os.path.exists(dirName):
@@ -2129,9 +1823,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                     #print("Directory ", dirName , "Created")
                 else:
                     #print("Directory ", dirName , " already exists")
-
                     file = open("perimeterData/"+nameofFileFiltered+"_perimeter"+".txt","w")
-
                     for i in range(0,len(convexXHull)):
                         file.write(str(int(convexXHull[i]))+","+str(int(convexYHull[i]))+"\n")
                     file.write(str(int(valCenterMassX))+","+str(int(valCenterMassY))+"\n")
@@ -2143,11 +1835,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
 
 
         elif var == 1: #Caso perimetro sin etiquetar
-
             cantidad = len(perimeterPointList)
-
             for i in range(0,cantidad-1):
-
                         valXTail = int(valuesXPerimeter[i])
                         valYTail = int(valuesYPerimeter[i])
                         valXHead = int(valuesXPerimeter[i+1])
@@ -2168,8 +1857,6 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             valXHead = int(valuesXPerimeter[cantidad-1])
             valYHead = int(valuesYPerimeter[cantidad-1])
 
-
-
             if pintar == 1:
                 linea_item = QtWidgets.QGraphicsLineItem(valXTail,valYTail,valXHead,valYHead)
                 linea_item.setPen(penGreen)
@@ -2187,12 +1874,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                     painter.end()
                     #image = self.grab().toImage()
                     imageReConverted = self.convertQImageToMat(image)
-
-
                     #imageFiltered = cv2.blur(imageReConverted,(5,5)) #15,15 o 10,10
-
                     mask = np.zeros(imageReConverted.shape, dtype=np.uint8)
-
                     roi_corners = np.array(perimeterPointList)
                     channel_count = imageReConverted.shape[2]
                     ignore_mask_color = (255,)*channel_count
@@ -2201,11 +1884,9 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                     #hsv_img_original = cv2.cvtColor(masked_image, cv2.COLOR_RGB2HSV)
                     #h,s,v = cv2.split(hsv_img_original)
                     contours_image = cv2.cvtColor(masked_image, cv2.COLOR_BGR2GRAY)
-
                     im2,cnts,hierarchy = cv2.findContours(contours_image.copy(),
                         cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                     #cnts = imutils.grab_contours(cnts)
-
                     #print(len(cnts))
                     cnt = cnts[0]
                     cv2.drawContours(contours_image, cnts, -1, 255, 3)
@@ -2218,7 +1899,6 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                     areaROI  = cv2.contourArea(cnt)
                     areaROI_cm = areaROI / ratio_cm_pixel_cuadrado
                     print("El area en cm2 es: ", areaROI_cm)
-
 
                     x = self._scene.width()
                     y = self._scene.height()
@@ -2235,39 +1915,31 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                     self.setScene(self._scene)
                 #areaROI = cv2.countNonZero(v)
                 #print(areaROI)
-
-
                 #cv2.namedWindow('Mask', cv2.WINDOW_NORMAL)
                 #cv2.resizeWindow('Mask',600,600)
                 #cv2.moveWindow('Mask',200,100)
                 #cv2.imshow('Mask',contours_image)
-
                 #cv2.namedWindow('hsv_img_original', cv2.WINDOW_NORMAL)
                 #cv2.resizeWindow('hsv_img_original',600,600)
                 #cv2.moveWindow('hsv_img_original',200,100)
                 #cv2.imshow('hsv_img_original',hsv_img_original)
-
                 #cv2.namedWindow('h', cv2.WINDOW_NORMAL)
                 #cv2.resizeWindow('h',600,600)
                 #cv2.moveWindow('h',200,100)
                 #cv2.imshow('h',h)
-
                 #cv2.namedWindow('s', cv2.WINDOW_NORMAL)
                 #cv2.resizeWindow('s',600,600)
                 #cv2.moveWindow('s',200,100)
                 #cv2.imshow('s',s)
-
                 #cv2.namedWindow('v', cv2.WINDOW_NORMAL)
                 #cv2.resizeWindow('v',600,600)
                 #cv2.moveWindow('v',200,100)
                 #cv2.imshow('v',v)
 
-
             #print(imagePath)
             nameofFile = imagePath.split('/')[-1]
             nameofFileFiltered = nameofFile.split('.')[0]
             #print(nameofFileFiltered)
-
 
             if perimeterSaved == False:
                 #Creamos directory o comprobamos si existe
@@ -2281,7 +1953,6 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                     #print("Directory ", dirName , " already exists")
 
                 file = open("perimeterData/"+nameofFileFiltered+"_perimeter"+".txt","w")
-
                 for i in range(0,len(valuesXPerimeter)):
                     file.write(str(int(valuesXPerimeter[i]))+","+str(int(valuesYPerimeter[i]))+"\n")
                 file.write(str(int(valCenterMassX))+","+str(int(valCenterMassY))+"\n")
@@ -2291,18 +1962,9 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 self.msg = QtWidgets.QMessageBox.about(self,'Save perimeter data','Perimeter data has been saved sucessfully')
                 perimeterSaved = True
 
-
-
-    def cross(self,o, a, b):
-
-        return (a[0] - o[0]) * (b[1] - o[1]) -\
-               (a[1] - o[1]) * (b[0] - o[0])
-
-
-
+    # Funcion para pintar los datos cargados al programa
     def drawLoadedData(self,num):
         #print(tiburonesTotales)
-
         global valuesXTail
         global valuesYTail
         global valuesXHead
@@ -2322,14 +1984,9 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global color_dot2
         global color_labelled_analyzed_data
 
-
-
         #self.resetView()
-
         self.calcMedian()
-
         #Imprimir toda la chicha
-
         #print("List values XTail: ", valuesXTail[0:tiburonesTotales])
         #print("List values YTail: ", valuesYTail[0:tiburonesTotales])
         #print("List values XHead: ", valuesXHead[0:tiburonesTotales])
@@ -2346,52 +2003,38 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             valYTail = float(valuesYTail[i])
             valXHead = float(valuesXHead[i])
             valYHead = float(valuesYHead[i])
-
             colordelAnalizado = QtGui.QColor(color_labelled_analyzed_data)
             colordelVector1 = QtGui.QColor(color_vector1)
             colordelVector2 = QtGui.QColor(color_vector2)
             colordelDot1 = QtGui.QColor(color_dot1)
             colordelDot2 = QtGui.QColor(color_dot2)
-
-
-
             penGreen = QtGui.QPen(colordelAnalizado,calcGrosorAnalyzed)
             penVector1 = QtGui.QPen(colordelVector1,calcGrosorAnalyzed)
             penBlack = QtGui.QPen(QtCore.Qt.black,calcGrosorAnalyzed)
             penVector2 = QtGui.QPen(colordelVector2,calcGrosorAnalyzed)
-
             penRed = QtGui.QPen(colordelDot1,calcGrosorAnalyzed)
             penBlue = QtGui.QPen(colordelDot2,calcGrosorAnalyzed)
             #print('ValoresXT:',valXTail)
             #print('ValoresYT:',valYTail)
             #print('ValoresXH:',valXHead)
             #print('ValoresYH:',valYHead)
-
             valXMed = float(valuesXMed[i])
             valYMed = float(valuesYMed[i])
             valU = float(vec_u[i])
             valV = float(vec_v[i])
-
             valDist = float(neighList[i])
             valAngle = float(angleList[i])
-
             #print('valoresXMed:',valXMed)
             #print('ValoresYMed:',valYMed)
-
-
-
 
             # Dibujar punto medio
             rad = 1.0+calcGrosorAnalyzed #1.0
             brush = QtGui.QBrush(Qt.SolidPattern)
-
             #print(calcGrosorAnalyzed)
 
-            #comprobar si la i del angulo de los sizes es mayor o menor a lo que sea etc
-
+            # Se comprueba si la i del angulo de los sizes es mayor o menor a lo que sea etc
             if valDist <= 2*average_size:
                 genericPen = penRed
-
             elif valDist > 2*average_size:
                 genericPen = penBlue
 
@@ -2401,16 +2044,14 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 ellipse_item.setBrush(brush)
                 ellipse_item.setData(1,0)
                 #self._scene.addItem(ellipse_item)
-
                 #print('dibujo circulito')
                 #print(i)
                 #self._scene.addItem(self._scene.addEllipse(valXMed-rad,valYMed-rad,rad*2.0,rad*2.0,genericPen,brush))
 
-            # Dibujar vectors
+            # Se dibujan los vectores
             vector_uv = QtCore.QLineF(0,0,valV,valU)
             vector_uv.translate(valXMed,valYMed)
             #vector_uv.setLength(30)
-
             linea_item_vector = QtWidgets.QGraphicsLineItem(vector_uv)
             linea_item_vector.setData(1,1)
 
@@ -2424,8 +2065,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 linea_item = QtWidgets.QGraphicsLineItem(valXTail,valYTail,valXHead,valYHead)
                 linea_item.setData(0,i)
                 linea_item.setPen(penGreen)
-
                 linea_item.setData(1,0)
+
             #poner vector_uv.y1() y vector_uv.y2() v y u
             dX = valXHead - valXTail
             dY = valYHead - valYTail
@@ -2451,7 +2092,6 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 linea_item_flecha_1.setPen(genericPen)
                 linea_item_flecha_2 = QtWidgets.QGraphicsLineItem(vector_flecha_2)
                 linea_item_flecha_2.setPen(genericPen)
-
                 linea_item_flecha_1.setData(1,1)
                 linea_item_flecha_2.setData(1,1)
 
@@ -2467,7 +2107,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             self.setScene(self._scene)
             #print('Pez' + str(i) + 'impreso')
 
-
+# Clase que contiene la Interfaz Básica o de etiquetado
 class PhotoDataViewer(QtWidgets.QGraphicsView):
     photoClicked = QtCore.pyqtSignal(QtCore.QPointF)
     labelUpdater = QtCore.pyqtSignal(int,int,QtCore.QPointF)
@@ -2476,24 +2116,22 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
     DragModeConnecter = QtCore.pyqtSignal(bool,int)
     labelChecker = QtCore.pyqtSignal(int)
     tableRowCounter = QtCore.pyqtSignal()
-
     editAnalyzeImageLabel = QtCore.pyqtSignal()
 
 
-
+    # Funcion de inicializacion de la clase
     def __init__(self, parent):
         super(PhotoDataViewer, self).__init__(parent)
 
-        #Variables para controlar si hay imagen, el zoom, archivos en la escena, fotos, y add fotos a la escena
-        #Asi como modificar la escena para eliminar anchos y demas
+        # Variables para controlar si hay imagen, el zoom, archivos en la escena,
+        # fotos, y add fotos a la escena
+        # Asi como modificar la escena para eliminar anchos y demas
         self.startSelecting = False
         self.selectorActual = 1
         self.sharkCount = 0
         self.perimeterPointCounter = 0
-
         self.startX = 0
         self.startY = 0
-
         self.handDrag = False
         self._zoom = 0
         self._empty = True
@@ -2508,10 +2146,10 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
         self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(30, 30, 30)))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
 
-    #Se comprueba simplemente si la variable empty esta en false o true
+    # Se comprueba simplemente si la variable empty esta en false o true
     def hasPhoto(self):
         return not self._empty
-    #Ajusta la imagen al rectangulo creado
+    # Ajusta la imagen al rectangulo creado
     def fitInView(self, scale=True):
         rect = QtCore.QRectF(self._photo.pixmap().rect())
         if not rect.isNull():
@@ -2526,11 +2164,10 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                 self.scale(factor, factor)
             self._zoom = 0
 
-    #Cambia el raton de un tipo a otro y abre la imagen
+    # Funcion para cargar la imagen en el rectangulo de la interfaz
     def setPhoto(self, pixmap=None):
         self._zoom = 0
         if pixmap and not pixmap.isNull():
-
             #Al cargar una imagen se reinician las variables de interes
             self.startSelecting = True
             self.selectorActual = 1
@@ -2540,11 +2177,8 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
             self._scene.clear()
             self._photo = QtWidgets.QGraphicsPixmapItem()
             self._scene.addItem(self._photo)
-
             self.perimeterPointCounter = 0
-
             self.clicked = False
-
             self._empty = False
             global imag_loaded
             imag_loaded = self._empty
@@ -2556,7 +2190,7 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
             self._photo.setPixmap(QtGui.QPixmap())
         self.fitInView()
 
-    #Func para hacer zoom con ruleta
+    # Funcion para hacer zoom con la rueda del raton
     def wheelEvent(self, event):
         if self.hasPhoto():
             if event.angleDelta().y() > 0:
@@ -2571,23 +2205,18 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                 self.fitInView()
             else:
                 self._zoom = 0
-
         #print(self._zoom)
-
         #if self.sharkCount > 0 or self.perimeterPointCounter > 0:
         self.rePaintWithZoom(self._zoom)
 
+    # Funcion para repintar los datos en funcion del zoom del raton
     def rePaintWithZoom(self,zoom):
-
         global filasActuales
         global empty_row
-
         global tiburonesTotales
 
         self.errorAtZoom = False
-
         self.tableRowCounter.emit()
-
         longitud_comprobacion = filasActuales
 
         #print ("[INFO] La longitud de comprobacion es {}".format(longitud_comprobacion))
@@ -2611,10 +2240,8 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
             self.errorAtZoom = True
 
         if self.errorAtZoom == False:
-
             self.resetParcial()
             global calcGrosor
-
             global color_labelled_data
             global color_perimeter
             global color_vector1
@@ -2622,7 +2249,6 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
             global color_dot1
             global color_dot2
             global color_labelled_analyzed_data
-
 
             #print self._scene.width(), self._scene.height()
 
@@ -2652,11 +2278,9 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
 
             c = QtGui.QColor(color_labelled_data)
             d = QtGui.QColor(color_perimeter)
-
             penGreen = QtGui.QPen(d,calcGrosor)
             penBlack = QtGui.QPen(c,calcGrosor)
             rad = calcGrosor #1.0
-
             longi = len(perimeterPointList)
 
             if longi >= 2:
@@ -2677,24 +2301,19 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                     self._scene.addItem(ellipse_item)
                     self.setScene(self._scene)
 
-
             global valuesXTail
             global valuesYTail
             global valuesXHead
             global valuesYHead
-
             #print('Cantidad tiburones globales')
             #print(tiburonesTotales)
             #print('Cantidad tiburones locales')
             #print(self.sharkCount)
-
-
             #print('Tiburones almacenados al mover rueda raton')
             #print("List values XTail: ", valuesXTail[0:self.sharkCount])
             #print("List values YTail: ", valuesYTail[0:self.sharkCount])
             #print("List values XHead: ", valuesXHead[0:self.sharkCount])
             #print("List values YHead: ", valuesYHead[0:self.sharkCount])
-
             longiShark = len(valuesXTail)
             #print('Cantidad de tiburones arrays')
             #print(longiShark)
@@ -2702,7 +2321,6 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
             if longiShark >= 1:
                 for i in range(0,longiShark):
                     #print('pinto el tiburon ',i)
-
                     valXTail = float(valuesXTail[i])
                     valYTail = float(valuesYTail[i])
                     valXHead = float(valuesXHead[i])
@@ -2711,21 +2329,17 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                     #print('ValoresYT:',valYTail)
                     #print('ValoresXH:',valXHead)
                     #print('ValoresYH:',valYHead)
-
                     lineaper = QtWidgets.QGraphicsLineItem(valXTail,valYTail,valXHead,valYHead)
                     lineaper.setPen(penBlack)
                     lineaper.setData(0,i)
                     self._scene.addItem(lineaper)
                     self.setScene(self._scene)
-
         else:
-
             self.msg = QtWidgets.QMessageBox.about(self,'Error zooming','Finish selection before zooming')
 
 
-
+    # Funcion para hacer un reseteado parcial de los datos
     def resetParcial(self):
-
         itemlist = self._scene.items()
         for items in itemlist:
             itemtype = type(items)
@@ -2733,7 +2347,7 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                 self._scene.removeItem(items)
 
 
-    #Func para activar la recogida de datos
+    # Funcion para activar el registro de datos
     def toggleDragMode(self):
         self.startSelecting = True
         self.labelUpdater.emit(self.selectorActual,self.sharkCount,QtCore.QPoint())
@@ -2745,12 +2359,12 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
             #cargarDatos = False
             #print('Cantidad tiburones locales-globales')
             #print(self.sharkCount)
-
         if self.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
         elif not self._photo.pixmap().isNull():
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
-    #Funcion para obtener datos cuando hacemos click con el raton
+
+    # Funcion para obtener datos cuando hacemos click con el raton
     def mousePressEvent(self, event):
         global color_labelled_data
         global color_perimeter
@@ -2772,11 +2386,9 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                     if self.selectorActual == 1 and measureClick == True:
                         self.selectorActual +=1
                         e = QtCore.QPointF(self.mapToScene(event.pos()))
-
                         self.startX = e.x()
                         self.startY = e.y()
                         self.clicked = True
-
 
                     elif self.selectorActual == 2 and measureClick == True:
                         e = QtCore.QPointF(self.mapToScene(event.pos()))
@@ -2784,13 +2396,11 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                         c = QtGui.QColor(color_labelled_data)
                         pen = QtGui.QPen(c,calcGrosor)
                         #self._scene.addItem(self._scene.addLine(self.startX,self.startY,e.x(),e.y(),pen))
-
                         linea_item = QtWidgets.QGraphicsLineItem(self.startX,self.startY,e.x(),e.y())
                         linea_item.setData(0,self.sharkCount)
                         linea_item.setPen(pen)
                         self._scene.addItem(linea_item)
                         self.setScene(self._scene)
-
                         self.selectorActual = 1
 
                         # Calculo distancia real
@@ -2846,26 +2456,17 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                         texto.setDefaultTextColor(c)
                         self._scene.addItem(texto)
                         self.setScene(self._scene)
-
-
-
                         #print(measure_pointList)
                         self.editAnalyzeImageLabel.emit()
                         self.clicked = False
 
-
-
                     if self.selectorActual == 1 and measureClick == False:
-
                         self.selectorActual += 1
                         self.labelUpdater.emit(self.selectorActual,self.sharkCount,QtCore.QPointF(self.mapToScene(event.pos())))
                         e = QtCore.QPointF(self.mapToScene(event.pos()))
-
                         self.startX = e.x()
                         self.startY = e.y()
-
                         self.clicked = True
-
 
                     elif self.selectorActual == 2 and doubleClick == True and perimeterClick == False and measureClick == False:
                         e = QtCore.QPointF(self.mapToScene(event.pos()))
@@ -2873,29 +2474,23 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                         c = QtGui.QColor(color_labelled_data)
                         pen = QtGui.QPen(c,calcGrosor)
                         #self._scene.addItem(self._scene.addLine(self.startX,self.startY,e.x(),e.y(),pen))
-
                         linea_item = QtWidgets.QGraphicsLineItem(self.startX,self.startY,e.x(),e.y())
                         linea_item.setData(0,self.sharkCount)
                         linea_item.setPen(pen)
                         self._scene.addItem(linea_item)
                         self.setScene(self._scene)
-
                         self.selectorActual = 1
                         self.labelUpdater.emit(self.selectorActual,self.sharkCount,QtCore.QPointF(self.mapToScene(event.pos())))
                         self.sharkCount += 1
-
                         #Activar funcion de analisis
                         if self.sharkCount > 2:
                             self.labelChecker.emit(1)
 
-
-                #Seleccionar perimetros
+                # Para seleccionar perimetros
                 if self.handDrag == False and self.startSelecting == True and perimeterClick == True:
                     global perimeterPointList
                     e = QtCore.QPointF(self.mapToScene(event.pos()))
-
                     c = QtGui.QColor(color_perimeter)
-
                     penGreen = QtGui.QPen(c,calcGrosor)
                     if self.perimeterPointCounter >= 1:
                         lineaper = QtWidgets.QGraphicsLineItem(self.startX,self.startY,e.x(),e.y())
@@ -2924,14 +2519,13 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                     perimeterPointList.append(point)
                     #print(perimeterPointList)
                     self.perimeterPointCounter += 1
-
                     #Activar funcion analisis perimetro
                     self.labelChecker.emit(2)
-
                     #print('Dibujo un punto de perimetro')
                     self.startX = e.x()
                     self.startY = e.y()
-                #Para borrar tiburones
+
+                # En el caso de querer borrar datos etiquetados de manera individual
                 if self.handDrag == False and self.startSelecting == True and deleteIt == True and perimeterClick == False:
                     #itemlist = self._scene.items()
                     item = self.itemAt(event.pos())
@@ -2948,28 +2542,25 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                             self.labelChecker.emit(0)
 
                         self.updateSharkIndex(index)
-
                         #Al borrar tambien borro del array global los datos
                         del valuesXTail[index]
                         del valuesYTail[index]
                         del valuesXHead[index]
                         del valuesYHead[index]
 
-
                     elif itemtype == QtWidgets.QGraphicsLineItem:
                         self._scene.removeItem(item)
-
 
                     index = item.data(2)
                     if itemtype == QtWidgets.QGraphicsEllipseItem:
                         self._scene.removeItem(item)
                         self.perimeterPointCounter -= 1
                         self.updatePointIndex(index)
-
                         del perimeterPointList[index]
                         del valuesXPerimeter[index]
                         del valuesYPerimeter[index]
-            #Para cambiar al modo drag a no drag
+
+            # Para cambiar al modo drag a no drag
             elif event.button() == QtCore.Qt.RightButton:
                 if self.handDrag == False:
                     self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
@@ -2981,6 +2572,7 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                     self.DragModeConnecter.emit(self.handDrag,self.selectorActual)
         super(PhotoDataViewer, self).mousePressEvent(event)
 
+    # Funcion para actualizar el index de registro de animales
     def updateSharkIndex(self,numero):
         itemlist = self._scene.items()
 
@@ -2991,6 +2583,7 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                 if dataActual > numero:
                     item.setData(0,dataActual-1)
 
+    # Funcion para actualizar el index de puntos de perimetro
     def updatePointIndex(self,numero):
         itemlist = self._scene.items()
 
@@ -3001,16 +2594,14 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                 if dataActual > numero:
                     item.setData(2,dataActual-1)
 
-
+    # Funcion para emitir el reseteo de datos
     def resetEmit(self):
         #print('recibo')
         self.sharkCount = 0
         self.perimeterPointCounter = 0
-
         self.startSelecting = True
         global tiburonesTotales
         tiburonesTotales = 0
-
         global valuesXTail
         del valuesXTail[:]
         global valuesYTail
@@ -3025,15 +2616,14 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
         del valuesXPerimeter[:]
         global valuesYPerimeter
         del valuesYPerimeter[:]
-
         self.labelChecker.emit(0)
-
         itemlist = self._scene.items()
         for items in itemlist:
             itemtype = type(items)
             if itemtype == QtWidgets.QGraphicsLineItem or itemtype == QtWidgets.QGraphicsEllipseItem:
                 self._scene.removeItem(items)
 
+    # Funcion que registra la accion de soltar el clic del raton (Click and Release)
     def mouseReleaseEvent(self, event):
         global color_labelled_data
         global calcGrosor
@@ -3052,13 +2642,12 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                     self.selectorActual = 1
                     self.labelUpdater.emit(self.selectorActual,self.sharkCount,QtCore.QPointF(self.mapToScene(event.pos())))
                     self.sharkCount += 1
-
                     if self.sharkCount > 2:
                         self.labelChecker.emit(1)
-
                     self.clicked = False
         super(PhotoDataViewer, self).mouseReleaseEvent(event)
 
+    # Funcion que registra el movimiento del raton en el cuadro de la imagen
     def mouseMoveEvent(self, event):
         itemlist = self._scene.items()
         for items in itemlist:
@@ -3080,16 +2669,14 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
                 self.setScene(self._scene)
         super(PhotoDataViewer, self).mouseMoveEvent(event)
 
-
+    # Funcion para cargar los datos etiquetados
     def drawLoadedData(self):
         global calcGrosor
         #Al cargar datos se reinician las variables de interes
         self.startSelecting = True
         pixmap = QPixmap(imagePath)
         self.setPhoto(pixmap)
-
         #print(tiburonesTotales)
-
         for i in range(0,tiburonesTotales):
             valXTail = float(valuesXTail[i])
             valYTail = float(valuesYTail[i])
@@ -3101,60 +2688,51 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
             #print('ValoresYT:',valYTail)
             #print('ValoresXH:',valXHead)
             #print('ValoresYH:',valYHead)
-
             linea_item = QtWidgets.QGraphicsLineItem(valXTail,valYTail,valXHead,valYHead)
             linea_item.setData(0,i)
             linea_item.setPen(pen)
             self._scene.addItem(linea_item)
             self.setScene(self._scene)
             #print('Pez' + str(i) + 'impreso')
-
         self.toggleDragMode()
 
+    # Funcion para eliminar los datos registrados al cambiar de un modo de
+    # etiquetado a otro modo diferente
     def deleteDataOnSwitchMode(self,perimeter):
-
         msgBox = QtWidgets.QMessageBox()
-
         if self.perimeterPointCounter > 0 and perimeter == False:
             msgBox.setWindowTitle("Labelling mode has been selected")
             msgBox.setText("All perimeter data stored will be deleted")
             msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             msgBox.setDefaultButton(QMessageBox.Ok)
-
             ret = msgBox.exec_()
-
             if ret == QMessageBox.Ok:
                 self.ResetInfoSig.emit()
                 return 1
             elif ret == QMessageBox.Cancel:
                 return 0
-
         elif self.sharkCount > 0 and perimeter == True:
             msgBox.setWindowTitle("Select perimeter mode has been selected")
             msgBox.setText("All labelled data stored will be deleted")
             msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             msgBox.setDefaultButton(QMessageBox.Ok)
-
             ret = msgBox.exec_()
-
             if ret == QMessageBox.Ok:
                 self.ResetInfoSig.emit()
                 return 1
             elif ret == QMessageBox.Cancel:
                 return 0
-
         else:
             return 1
 
 
-
+# Clase que contiene la tabla con los datos etiquetados por el usuario
 class DataTable(QtWidgets.QTableWidget):
-
     sharkUpdater = QtCore.pyqtSignal()
     loadLinesData = QtCore.pyqtSignal()
-
     labelChecker = QtCore.pyqtSignal(int)
 
+    # Funcion para inicializar la clase
     def __init__(self, r, c):
         super(DataTable,self).__init__(r, c)
         col_headers = ['Tail X', 'Tail Y', 'Head X', 'Head Y']
@@ -3162,10 +2740,10 @@ class DataTable(QtWidgets.QTableWidget):
         self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.show()
 
+    # Funcion para contar las filas que tiene la tabla
     def counter(self):
         global filasActuales
         global empty_row
-
         filasActuales = self.rowCount()
 
         item = self.item(0,0)
@@ -3175,32 +2753,27 @@ class DataTable(QtWidgets.QTableWidget):
         else:
             empty_row = False
 
-
-
+    # Funcion para guardar la tabla de datos en el ordenador
     def save_sheet(self,var):
         #path = QFileDialog.getSaveFileName(self, 'Save data in CSV file', os.getcwd(), 'CSV(*.csv)')
-
         cacheDir = None
         cacheType = None
         cacheTitle = None
         cacheInfo = None
-
 
         if var == 0: #Datos sin analizar
             cacheDir = 'labelledData'
             cacheType = "_labelled"
             cacheTitle = 'Labelled data saved'
             cacheInfo = "Labelled data has been saved sucessfully"
-
         elif var == 1: #Datos analizados
             cacheDir = 'analyzedData'
             cacheType = "_analyzed"
             cacheTitle = 'Analyzed data saved'
             cacheInfo = "Analyzed data has been saved sucessfully"
 
-        #Creamos directory o comprobamos si existe
+        # Creamos directory o comprobamos si existe
         dirName = cacheDir
-
         if not os.path.exists(dirName):
             os.mkdir(dirName)
             #print("Directory ", dirName , "Created")
@@ -3225,6 +2798,7 @@ class DataTable(QtWidgets.QTableWidget):
         if var == 0:
             self.msg = QtWidgets.QMessageBox.about(self,cacheTitle,cacheInfo)
 
+    # Funcion para cargar los datos de un fichero al programa
     def open_sheet(self):
         path = QFileDialog.getOpenFileName(self, 'Open CSV', os.getcwd(), 'CSV(*.csv)')
         if path[0] != '':
@@ -3240,35 +2814,27 @@ class DataTable(QtWidgets.QTableWidget):
                     for column, stuff in enumerate(row_data):
                         item = QtWidgets.QTableWidgetItem(stuff)
                         self.setItem(row, column, item)
-
             #Se activa el menu de analisis
             self.labelChecker.emit(1)
 
-
-
         if path[0] != '':
-
             numColumnas = self.columnCount()
             if numColumnas > 4:
                 #print('error al cargar datos')
                 self.msg = QtWidgets.QMessageBox.about(self,'Error loading',"Please load non analyzed data")
-
-
             global cargarDatos
             cargarDatos = True
             self.sharkUpdater.emit()
             self.loadLinesData.emit()
 
-
+# Clase principal que contiene las dos clases: numerica y gráfica
 class Window(QtWidgets.QWidget):
+    # Funcion de inicializacion
     def __init__(self):
         super(Window, self).__init__()
-
         self.dialog = WindowResults()
         self.viewer = PhotoDataViewer(self)
         self.data = DataTable(1,4)
-        # Button to change from drag/pan to getting pixel info
-
         self.editPixInfo = QtWidgets.QLineEdit()
         self.editPixInfo.setReadOnly(True)
         self.viewer.photoClicked.connect(self.photoClicked)
@@ -3279,32 +2845,21 @@ class Window(QtWidgets.QWidget):
         self.label_status = QtWidgets.QLabel('Status...')
         self.label_status.setStyleSheet("font: bold 14px")
         self.splitter = QSplitter(Qt.Horizontal)
-
         self.primeraLlamada = False
-
         self.viewer.labelUpdater.connect(self.labelUpdater)
         self.data.sharkUpdater.connect(self.sharkUpdater)
         self.data.loadLinesData.connect(self.loadLinesData)
         self.viewer.tableUpdater.connect(self.tableUpdater)
         self.viewer.DragModeConnecter.connect(self.DragModeConnecter)
-
         self.viewer.ResetInfoSig.connect(self.ResetInfo)
-
         self.dialog.viewerRes.editVelDirTable.connect(self.editVelDirTable)
-
         self.viewer.tableRowCounter.connect(self.data.counter)
 
-
-
-
-
-        # Arrange layout
+        # Se organiza la disposicion de los elementos en la interfaz
         VBlayout = QtWidgets.QVBoxLayout()
         VBlayout1 = QtWidgets.QVBoxLayout()
-
         HBlayout1 = QtWidgets.QHBoxLayout()
         HBlayout2 = QtWidgets.QHBoxLayout()
-
         self.widget = QtWidgets.QWidget()
         self.widget.setLayout(VBlayout)
         self.widget1 = QtWidgets.QWidget()
@@ -3312,29 +2867,24 @@ class Window(QtWidgets.QWidget):
 
         VBlayout.addWidget(self.labelling_zone)
         VBlayout1.addWidget(self.labelled_elements)
-
         VBlayout.addWidget(self.viewer)
         VBlayout1.addWidget(self.data)
-
         self.splitter.addWidget(self.widget)
         self.splitter.addWidget(self.widget1)
         self.splitter.setSizes([152,100])
         self.splitter.setHandleWidth(0)
-
         HBlayout1.addWidget(self.splitter)
-
         HBlayout2.addWidget(self.editPixInfo)
         HBlayout2.addWidget(self.label_status)
         HBlayout2.addStretch(1)
 
-        # New layout
         grid = QtWidgets.QGridLayout(self)
         grid.addLayout(HBlayout1,0,0,50,2)
         grid.addLayout(HBlayout2,51,1)
 
+    # Funcion para editar la tabla numerica con los datos etiquetados
     def editVelDirTable(self):
         #print("Modifying table")
-
         global veldir_position
         global veldir_angle
         global veldir_vec_u
@@ -3342,8 +2892,6 @@ class Window(QtWidgets.QWidget):
         global veldir_velocity
         global filesXPointsCenter
         global filesYPointsCenter
-
-
         #print veldir_position
         #print veldir_velocity
         #print veldir_vec_u
@@ -3351,14 +2899,10 @@ class Window(QtWidgets.QWidget):
         #print veldir_angle
         #print filesXPointsCenter
         #print filesYPointsCenter
-
-
         for i in range(0,len(veldir_vec_u)):
             self.dialog_2.insertRow(i+1)
-
         #Para combinar celdas
         #self.dialog_2.setSpan(0,4,2,1)
-
         r = self.dialog_2.rowCount()
         dim = self.dialog_2.calcDimension(r)
 
@@ -3366,24 +2910,18 @@ class Window(QtWidgets.QWidget):
             dim = 600
 
         self.dialog_2.setGeometry(750,100,1120,dim)
-
-
         for i in range(0,len(veldir_vec_u)):
-
             self.dialog_2.setItem(i,0,QtWidgets.QTableWidgetItem(str(veldir_vec_u[i])))
             self.dialog_2.setItem(i,1,QtWidgets.QTableWidgetItem(str(veldir_vec_v[i])))
             self.dialog_2.setItem(i,2,QtWidgets.QTableWidgetItem(str(veldir_position[i])))
             self.dialog_2.setItem(i,3,QtWidgets.QTableWidgetItem(str(veldir_velocity[i])))
-
             if i > 0:
                 self.dialog_2.setItem(i,4,QtWidgets.QTableWidgetItem(str(veldir_angle[i-1])))
 
-        #Se guarda la tabla en un excel
+        # Se guarda la tabla en un excel
         self.dialog_2.save_sheet(2)
 
-
-
-
+    # Funcion para alternar modos de seleccion con el cursor o puntero
     def DragModeConnecter(self,var,num):
         if var == True:
             self.label_status.setText('Drag mode selected')
@@ -3403,24 +2941,19 @@ class Window(QtWidgets.QWidget):
                 elif doubleClick == False and perimeterClick == False:
                     self.label_status.setText('Drag and release. Status: Select Head')
 
-
-
+    # Funcion de reseteo de datos
     def restablecerDatos(self):
-
         global valuesXTail
         global valuesYTail
         global valuesXHead
         global valuesYHead
-
         global perimeterPointList
         del perimeterPointList[:]
         global valuesXPerimeter
         del valuesXPerimeter[:]
         global valuesYPerimeter
         del valuesYPerimeter[:]
-
         global ratio_cm_pixel
-
         self.data.clear()
         col_headers = ['Tail X', 'Tail Y', 'Head X', 'Head Y']
         self.data.setHorizontalHeaderLabels(col_headers)
@@ -3433,13 +2966,10 @@ class Window(QtWidgets.QWidget):
             self.label_status.setText('Point and click. Status: Select Tail')
         elif doubleClick == False:
             self.label_status.setText('Drag and release. Status: Select Tail')
-
         #print('recargando datos de nuevo')
         #print(self.viewer.sharkCount)
         tiburones = self.viewer.sharkCount
-
         for i in range(0,self.viewer.sharkCount):
-
             if i >= 1:
                 self.data.insertRow(i)
 
@@ -3447,7 +2977,6 @@ class Window(QtWidgets.QWidget):
             self.data.setItem(i,1, QtWidgets.QTableWidgetItem(str(int(valuesYTail[i]))))
             self.data.setItem(i,2, QtWidgets.QTableWidgetItem(str(int(valuesXHead[i]))))
             self.data.setItem(i,3, QtWidgets.QTableWidgetItem(str(int(valuesYHead[i]))))
-
         self.viewer.drawLoadedData()
         self.viewer.sharkCount = tiburones
 
@@ -3465,10 +2994,7 @@ class Window(QtWidgets.QWidget):
             self.viewer._scene.addItem(texto)
             self.viewer.setScene(self.viewer._scene)
 
-
-
-
-    #Boton que abre la imagen seleccionada
+    # Funcion que carga alprograma la imagen seleccionada
     def loadImage(self):
         global nameofFileFiltered
         #Se reinician los labels de status al abrir una nueva imagen
@@ -3480,30 +3006,22 @@ class Window(QtWidgets.QWidget):
         imagePath, _ = QFileDialog.getOpenFileName(self, 'Open File')
         self.pixmap = QPixmap(imagePath)
         self.viewer.setPhoto(self.pixmap)
-
         #Nos quedamos con el nombre de la imagen para futuro analisis
         #print(imagePath)
         nameofFile = imagePath.split('/')[-1]
         nameofFileFiltered = nameofFile.split('.')[0]
         #print(nameofFileFiltered)
-
         # Al abrir una imagen se reinician todas las variables de interes
         self.data.clear()
         col_headers = ['Tail X', 'Tail Y', 'Head X', 'Head Y']
         self.data.setHorizontalHeaderLabels(col_headers)
         self.data.setRowCount(1)
         self.primeraLlamada = False
-
-
         self.viewer.resetEmit()
-
-
         self.viewer.toggleDragMode()
 
-
-
+    # Funcion de reseteo de datos
     def ResetInfo(self):
-
         global doubleClick
         global perimeterClick
         #self.label_status.setText('Status...')
@@ -3511,12 +3029,8 @@ class Window(QtWidgets.QWidget):
             self.label_status.setText('Point and click. Status: Select Tail')
         elif doubleClick == False:
             self.label_status.setText('Drag and release. Status: Select Tail')
-
         if perimeterClick == True:
             self.label_status.setText('Select perimeter points. Status: Select points to obtain perimeter')
-
-
-
 
         self.editPixInfo.setText(' ')
         self.data.clear()
@@ -3528,34 +3042,29 @@ class Window(QtWidgets.QWidget):
         cargarDatos = False
         self.viewer.resetEmit()
 
-    #Al hacer click se escribe la pos del cursor
+    # Funcion para editar la etiqueta con las coordenadas X,Y del mouse
     def photoClicked(self, pos):
         if self.viewer.dragMode()  == QtWidgets.QGraphicsView.NoDrag:
             self.editPixInfo.setText('%d, %d' % (pos.x(), pos.y()))
 
+    # Funcion para actualizar la barra de estado
     def labelUpdater(self, num, tibur, pos):
-
         global valuesXHead
         global valuesYHead
         global valuesXTail
         global valuesYTail
-
         if num == 1:
-
             if doubleClick == True:
                 self.label_status.setText('Point and click. Status: Select Tail')
             elif doubleClick == False:
                 self.label_status.setText('Drag and release. Status: Select Tail')
-
             #print(self.primeraLlamada)
-
             if self.primeraLlamada == True:
                 self.data.setItem(tibur,2, QtWidgets.QTableWidgetItem(str(int(pos.x()))))
                 valuesXHead.append(self.data.item(tibur,2).text())
                 self.data.setItem(tibur,3, QtWidgets.QTableWidgetItem(str(int(pos.y()))))
                 valuesYHead.append(self.data.item(tibur,3).text())
             self.primeraLlamada = True
-
         elif num == 2:
             if doubleClick == True:
                 self.label_status.setText('Point and click. Status: Select Head')
@@ -3565,12 +3074,10 @@ class Window(QtWidgets.QWidget):
             if tibur >= 1:
                 #print('llego hasta aqui')
                 self.data.insertRow(tibur)
-
             self.data.setItem(tibur,0, QtWidgets.QTableWidgetItem(str(int(pos.x()))))
             valuesXTail.append(self.data.item(tibur,0).text())
             self.data.setItem(tibur,1, QtWidgets.QTableWidgetItem(str(int(pos.y()))))
             valuesYTail.append(self.data.item(tibur,1).text())
-
         #print('Cantidad tiburones locales')
         #print(self.viewer.sharkCount)
         #print("List values XTail: ", valuesXTail[0:self.viewer.sharkCount])
@@ -3578,20 +3085,20 @@ class Window(QtWidgets.QWidget):
         #print("List values XHead: ", valuesXHead[0:self.viewer.sharkCount])
         #print("List values YHead: ", valuesYHead[0:self.viewer.sharkCount])
 
-
+    # Funcion para actualizar la tabla numerica
     def tableUpdater(self,num):
         self.data.removeRow(num)
-
         if self.data.rowCount() == 0:
             self.data.insertRow(0)
 
+    # Funcion para almacenar los datos en el disco
     def saveData(self,var):
         self.data.save_sheet(var)
 
+    # Funcion para cargar los datos del ordenador en el programa
     def loadData(self):
         if imag_loaded == False:
             #Se reinician los labels de status al cargar datos
-
             global valuesXTail
             del valuesXTail[:]
             global valuesYTail
@@ -3606,7 +3113,6 @@ class Window(QtWidgets.QWidget):
             self.editPixInfo.setText(' ')
             self.viewer.resetEmit()
             self.data.open_sheet()
-
             #global valuesXTail
             #del valuesXTail[:]
             #global valuesYTail
@@ -3615,17 +3121,19 @@ class Window(QtWidgets.QWidget):
             #del valuesXHead[:]
             #global valuesYHead
             #del valuesYHead[:]
-
         else:
             self.showDialog()
 
+    # Funcion para mostrar un cuadro de dialogo de aviso
     def showDialog(self):
         self.msg = QtWidgets.QMessageBox.about(self,'Information',"Please load an image before loading data")
 
+    # Funcion para actualizar el contador de animales etiquetados
     def sharkUpdater(self):
         global tiburonesTotales
         tiburonesTotales = self.data.rowCount()
 
+    # Funcion para dibujar las lineas con los datos de etiquetado
     def loadLinesData(self):
         #print('hola')
         global valuesXTail
@@ -3633,14 +3141,11 @@ class Window(QtWidgets.QWidget):
         global valuesXHead
         global valuesYHead
         global tiburonesTotales
-
         #print('Cargo datos y compruebo total tiburones')
         #print(tiburonesTotales)
-
         for i in range(0,tiburonesTotales):
             valuesXTail.append(self.data.item(i,0).text())
             valuesYTail.append(self.data.item(i,1).text())
-
             valuesXHead.append(self.data.item(i,2).text())
             valuesYHead.append(self.data.item(i,3).text())
 
@@ -3648,39 +3153,31 @@ class Window(QtWidgets.QWidget):
         #print("List values YTail: ", valuesYTail[0:tiburonesTotales])
         #print("List values XHead: ", valuesXHead[0:tiburonesTotales])
         #print("List values YHead: ", valuesYHead[0:tiburonesTotales])
-
         self.viewer.drawLoadedData()
 
+
+    # Funcion para seleccionar datos don dos clics
     def ClickClick(self):
-
         wantToChangeToPerimeter = False
-
-
         cambio = self.viewer.deleteDataOnSwitchMode(wantToChangeToPerimeter)
-
         if cambio == 1:
-
             global doubleClick
             doubleClick = True
             global deleteIt
             deleteIt = False
             global perimeterClick
             perimeterClick = False
-
             global measureClick
             measureClick = False
 
             self.label_status.setText('Point and click. Status: Select Tail')
-
             self.viewer.startX = None
             self.viewer.startY = None
 
+    # Funcion para seleccionar datos con clic y arrastre
     def ClickRelease(self):
-
         wantToChangeToPerimeter = False
-
         cambio = self.viewer.deleteDataOnSwitchMode(wantToChangeToPerimeter)
-
         if cambio == 1:
             global doubleClick
             doubleClick = False
@@ -3688,21 +3185,17 @@ class Window(QtWidgets.QWidget):
             deleteIt = False
             global perimeterClick
             perimeterClick = False
-
             global measureClick
             measureClick = False
 
             self.viewer.clicked = False
-
             self.label_status.setText('Drag and release. Status: Select Tail')
-
             self.viewer.startX = None
             self.viewer.startY = None
 
+    # Funcion para seleccionar datos de perimetro
     def ClickPerimeter(self):
-
         wantToChangeToPerimeter = True
-
         cambio = self.viewer.deleteDataOnSwitchMode(wantToChangeToPerimeter)
 
         if cambio == 1:
@@ -3710,20 +3203,15 @@ class Window(QtWidgets.QWidget):
             perimeterClick = True
             global deleteIt
             deleteIt = False
-
             global measureClick
             measureClick = False
-
             self.label_status.setText('Select perimeter points. Status: Select points to obtain perimeter')
-
             self.viewer.startX = None
             self.viewer.startY = None
 
-
+    # Funcion para seleccionar medidas reales en la imagen con dos clics
     def SelectDist(self):
-
         wantToChangeToPerimeter = False
-
         cambio = self.viewer.deleteDataOnSwitchMode(wantToChangeToPerimeter)
 
         if cambio == 1:
@@ -3735,49 +3223,40 @@ class Window(QtWidgets.QWidget):
             deleteIt = False
             global measureClick
             measureClick = True
-
             self.viewer.clicked = False
-
             self.label_status.setText('Select actual measurements. Status: Select two points to measure')
-
             self.viewer.startX = None
             self.viewer.startY = None
 
-
-
+    # Funcion para eliminar un dato etiquetado en la imagen
     def DeleteItem(self):
         global deleteIt
         deleteIt = True
         global perimeterClick
         perimeterClick = False
-
         self.label_status.setText('Delete single item. Status: Select an item to delete it')
-
         self.viewer.startX = None
         self.viewer.startY = None
 
-
+    # Funcion para analizar la velocidad y direccion de un grupo de animales
     def VelDirAnalyze(self):
         #print('analisis vel/dir')
-
         self.dialog.viewerRes.setPhoto(self.pixmap)
-
         self.dialog.cb_labelled.setEnabled(False)
         self.dialog.cb_analyzed.setEnabled(False)
         self.dialog.cb_perimeter.setEnabled(False)
         self.dialog.cb_density.setEnabled(False)
-
         self.dialog.savegifbtn.setVisible(True)
         self.dialog.savevideobtn.setVisible(True)
-
         self.dialog.show()
         self.dialog_2 = DataResults(1,5)
-
         col_headers = ['Vector U', 'Vector V', 'Distance', 'Velocity', 'Angle']
         self.dialog_2.setHorizontalHeaderLabels(col_headers)
         self.dialog.viewerRes.calculateVelandDir()
 
-
+    # FUNCIONALIDAD EXTRA (NO IMPLEMENTADA):
+    # Esta función se encargaria de detectar heridas en una imagen de forma
+    # automatica con herramientas de aprendizaje
     def ImageAnalyze(self):
         #########################################
         print('Se analiza la imagen en busca de heridas...')
@@ -3785,20 +3264,16 @@ class Window(QtWidgets.QWidget):
         # Se tiene que llamar a una funcion de viewerRes dentro de dialog y que se muestre
         # etc etc...
 
+    # Función para analizar los datos de perímetro
     def PerimeterAnalyze(self):
         global perAnalyze
-
         #print('analisis perimetro de escuela')
-
         self.dialog.viewerRes.setPhoto(self.pixmap)
-
         self.dialog.cb_labelled.setEnabled(False)
         self.dialog.cb_analyzed.setEnabled(False)
         self.dialog.cb_perimeter.setEnabled(True)
         self.dialog.cb_density.setEnabled(True)
-
         #print perAnalyze
-
         self.dialog.show()
 
         if perAnalyze == True:
@@ -3806,9 +3281,7 @@ class Window(QtWidgets.QWidget):
         else:
             self.dialog.viewerRes.ImageProcess(0,0)
 
-
         self.dialog_2 = DataResults(1,1)
-
         if ratio_cm_pixel != 0:
             x = self.dialog.viewerRes._scene.width()
             y = self.dialog.viewerRes._scene.height()
@@ -3822,13 +3295,11 @@ class Window(QtWidgets.QWidget):
             texto.setDefaultTextColor(c)
             self.dialog.viewerRes._scene.addItem(texto)
             self.dialog.viewerRes.setScene(self.dialog.viewerRes._scene)
-
         #self.dialog.viewerRes.drawPerimeter()
 
-
+    # Función para analizar los datos etiquetados
     def DataAnalyze(self):
         #print('analisis')
-
         global valuesXTail
         del valuesXTail[:]
         global valuesYTail
@@ -3853,32 +3324,22 @@ class Window(QtWidgets.QWidget):
         del indexList[:]
         global midPointList
         del midPointList[:]
-
         global perAnalyze
         global tiburonesTotales
-
         global errorAnalyzing
-
         global ratio_cm_pixel
 
         #if cargarDatos == True:
         #    self.viewer.sharkCount = tiburonesTotales
-
         tiburonesTotales = self.viewer.sharkCount
-
         #print('contador tiburones viewer')
         #print(self.viewer.sharkCount)
         #print('contador tiburones totales')
         #print(tiburonesTotales)
 
-
         #Se comprueba que esten todos los datos correctamente (ultimo pez marcado bien)
-
         longitud_comprobacion = self.data.rowCount()
-
         #print longitud_comprobacion
-
-
 
         if self.viewer.sharkCount < longitud_comprobacion:
             #print "El ultimo dato es incorrecto"
@@ -3887,24 +3348,17 @@ class Window(QtWidgets.QWidget):
             #print "El ultimo dato es correcto"
             errorAnalyzing = False
 
-
         if errorAnalyzing == False:
-
-
-
             #Se cargan los valores en las listas para operar con ellos
             for i in range(0,self.viewer.sharkCount):
                 valuesXTail.append(self.data.item(i,0).text())
                 valuesYTail.append(self.data.item(i,1).text())
                 valuesXHead.append(self.data.item(i,2).text())
                 valuesYHead.append(self.data.item(i,3).text())
-
             for columna in range(4,11):
                 self.data.insertColumn(columna)
-
             col_headers = ['Tail X', 'Tail Y', 'Head X', 'Head Y', 'X med', 'Y med','u','v','Index','Distance','Angle']
             self.data.setHorizontalHeaderLabels(col_headers)
-
             #Se calcula y add a la tabla el punto medio X e Y de los datos en Pixeles
             self.MidPointCalc()
             #Se calcula y add a la tabla el vector u y v
@@ -3913,7 +3367,6 @@ class Window(QtWidgets.QWidget):
             self.ClosestPoint()
             #Se calcula el angulo entre los vectores propios y el vecino mas proximo
             self.AngleVectors()
-
             #Se guardan los datos analizados
             self.saveData(1)
             #Tocaria abrir una nueva ventana que muestre los vectores dibujados y los datos en otro excel
@@ -3938,36 +3391,23 @@ class Window(QtWidgets.QWidget):
                 self.dialog.viewerRes._scene.addItem(texto)
                 self.dialog.viewerRes.setScene(self.dialog.viewerRes._scene)
 
-
-
-
-
-
             self.dialog.show()
-
             self.sharkUpdater()
-
             self.dialog.viewerRes.drawLoadedData(3)
-
             if perAnalyze == True:
                 self.dialog.viewerRes.ImageProcess(1,0)
             else:
                 self.dialog.viewerRes.ImageProcess(0,0)
 
-
-
             #self.dialog.viewerRes.saveImageAnalyzed()
-
             self.dialog_2 = DataResults(self.viewer.sharkCount,11)
             self.copyDataInNewTable()
-
         else:
-
             self.msg = QtWidgets.QMessageBox.about(self,'Error analyzing','There is an incomplete selected fish')
 
 
-
-
+    # Función para copiar los datos analizados de la Interfaz Básica a la
+    # Interfaz Avanzada
     def copyDataInNewTable(self):
         for i in range(self.viewer.sharkCount):
             for j in range(11):
@@ -3976,11 +3416,10 @@ class Window(QtWidgets.QWidget):
                 self.dialog_2.setItem(i,j,QtWidgets.QTableWidgetItem(str(valToCopy_val)))
         self.dialog_2.show()
 
-
+    # Función para calcular los ángulos y los vectores
     def AngleVectors(self):
         global vec_u
         global vec_v
-
 
         #print('Vec u list')
         #print vec_u
@@ -3988,44 +3427,36 @@ class Window(QtWidgets.QWidget):
         #print vec_v
         #print('Index List')
         #print indexList
-
         for i in range(self.viewer.sharkCount):
             valU = vec_u[i]
             valV = vec_v[i]
-
             vector_1 = (valU,valV)
-
             #indexVec = self.data.item(i,8)
             indexVec = indexList[i]
-
             #indexVec_val = int(indexVec.text())
             indexVec_val = indexVec
-
             valU_neigh = vec_u[indexVec_val]
             valV_neigh = vec_v[indexVec_val]
-
             vector_2 = (valU_neigh,valV_neigh)
-
             angulo_rad = self.angle_between(vector_1,vector_2)
-
             angulo_degree = np.rad2deg(angulo_rad)
-
             #Se redondea el angulo a dos decimales
             angulo_degree = round(angulo_degree,2)
-
             angleList.append(angulo_degree)
             self.data.setItem(i,10,QtWidgets.QTableWidgetItem(str(angleList[i])))
 
+    # Función para calcular el vector unitario
     def unit_vector(self,vector):
         return vector / np.linalg.norm(vector)
 
+    # Función para calcular el ángulo entre dos vectores
     def angle_between(self,v1, v2):
         v1_u = self.unit_vector(v1)
         v2_u = self.unit_vector(v2)
         return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
+    # Función para buscar el punto más próximo a un listado de puntos
     def ClosestPoint(self):
-
         for posicion in range(self.viewer.sharkCount):
             valX = valuesXMed[posicion]
             valY = valuesYMed[posicion]
@@ -4034,38 +3465,30 @@ class Window(QtWidgets.QWidget):
             midPointList.append(point)
 
         X = np.array(midPointList)
-
         #print(X[0])
         #print('Se imprime listado de puntos centricos')
         #print(X)
         tree = KDTree(X,leaf_size=2)
         dist,ind = tree.query(X[:self.viewer.sharkCount],k=2)
-
         #print('Se imprime el listado de indices')
         #print(ind)
         #print('Se imprime el listado de distancias')
         #print(dist)
-
         global indexList
         global neighList
-
         for i in range(self.viewer.sharkCount):
             indexNum = ind[i]
             realIndex = indexNum[1]
-
             indexList.append(realIndex)
             self.data.setItem(i,8,QtWidgets.QTableWidgetItem(str(indexList[i]+1)))
-
             indexNum = dist[i]
             realIndex = indexNum[1]
-
             neighList.append(realIndex)
             self.data.setItem(i,9,QtWidgets.QTableWidgetItem(str(int(neighList[i]))))
-
-
         #print(indexList)
         #print(neighList)
 
+    # Función para calcular los vectores
     def VectorsCalc(self):
         global vec_u
         global vec_v
@@ -4073,96 +3496,76 @@ class Window(QtWidgets.QWidget):
             number = float(float(valuesYHead[i])-float(valuesYTail[i]))
             vec_u.append(number)
             self.data.setItem(i,6, QtWidgets.QTableWidgetItem(str(int(vec_u[i]))))
-
             number = float(float(valuesXHead[i])-float(valuesXTail[i]))
             vec_v.append(number)
             self.data.setItem(i,7, QtWidgets.QTableWidgetItem(str(int(vec_v[i]))))
         #print("List values Vec_u: ", vec_u[0:self.viewer.sharkCount])
         #print("List values Vec_v: ", vec_v[0:self.viewer.sharkCount])
 
+    # Función para calcular el punto medio de cada dato etiquetado
     def MidPointCalc(self):
         global valuesXMed
         global valuesYMed
-
-
     #    #print(self.data.rowCount())
     #    print(tiburonesTotales)
         #print("List values XTail: ", valuesXTail[0:self.viewer.sharkCount])
         #print("List values YTail: ", valuesYTail[0:self.viewer.sharkCount])
         #print("List values XHead: ", valuesXHead[0:self.viewer.sharkCount])
         #print("List values YHead: ", valuesYHead[0:self.viewer.sharkCount])
-
         for i in range(self.data.rowCount()):
             number = float((float(valuesXHead[i])+float(valuesXTail[i]))/2)
             valuesXMed.append(number)
             self.data.setItem(i,4, QtWidgets.QTableWidgetItem(str(int(valuesXMed[i]))))
-
             number = float((float(valuesYHead[i])+float(valuesYTail[i]))/2)
             valuesYMed.append(number)
             self.data.setItem(i,5, QtWidgets.QTableWidgetItem(str(int(valuesYMed[i]))))
-
         #print("List values XMed: ", valuesXMed[0:self.viewer.sharkCount])
         #print("List values YMed: ", valuesYMed[0:self.viewer.sharkCount])
 
+    # Funcion para ordenar datos de manera alphanumerica
     def sorted_aphanumeric(self,data):
         convert = lambda text: int(text) if text.isdigit() else text.lower()
         alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
         return sorted(data, key=alphanum_key)
 
+    # Función para renombrar datos
     def renameData(self):
         global renameFolderName
-
         #print('holacaracola')
         i = 0
-
         directorio = QFileDialog.getExistingDirectory(self, 'Select Dataset of raw images')
-
         #print(directorio)
-
-
         renameFolderName = directorio.split('/')[-1] + "/"
-
         #print renameFolderName
-
         #files = sorted(os.listdir(directorio))
-
         files = os.listdir(directorio)
-
         files = self.sorted_aphanumeric(files)
-
         dataName, okPressed = QInputDialog.getText(self, "Rename Dataset", "Insert new name:")
-
         #print files
-
         if okPressed:
             #print(dataName)
-
             for filename in files:
                 src = directorio + "/" + filename
                 format = src.split('.')[-1]
                 number = '{0:03}'.format(i)
                 dst = dataName + str(number) + "."+ format
                 dst = directorio + "/" + dst
-
                 #print(src)
                 #print(dst)
-
                 os.rename(src,dst)
                 i+=1
 
+# Clase principal o Main del programa que contiene la ventana principal
+# que a su vez contiene al resto de clases
 class Interfaz(QMainWindow):
+    # Función de inicializacion
     def __init__(self):
         super(Interfaz,self).__init__()
-
-
-
         self.optMen = OptionsMenu()
         self.win = Window()
         self.setCentralWidget(self.win)
         self.init_ui()
-
     def init_ui(self):
-
         # Create images folder if it doesn't exist
         dirName = "imagesToAnalyze"
         if not os.path.exists(dirName):
@@ -4170,158 +3573,123 @@ class Interfaz(QMainWindow):
             #print("Directory ", dirName , "Created")
         else:
             pass
-
-        # Create Menu Bar
+        # Se crea la barra de herramientas
         bar = self.menuBar()
         bar.setNativeMenuBar(False)
-
-        # Create Root Menus
+        # Se crean los menús y submenús de la barra de herramientas
         file = bar.addMenu('File')
         analyze_info = bar.addMenu('Analyze Labelled Info')
-
         #analyze_image = bar.addMenu('Analyze Image')
-
         labelling_methods = bar.addMenu('Labelling Method')
         delete_options = bar.addMenu('Delete Options')
         personal_options = bar.addMenu('Options')
 
-        # Signals
+        # Señales que conectan esta clase con otras clases
         self.win.dialog.hideandshowSignal.connect(self.mostrar)
         self.win.data.labelChecker.connect(self.labelChecker)
         self.win.viewer.labelChecker.connect(self.labelChecker)
-
         self.win.viewer.editAnalyzeImageLabel.connect(self.editAnalyzeImageLabel)
 
-
-        # Create Actions for Menus
-
+        # Se crean las acciones al interactuar con los menús
         #self.analyze_image_action = QAction('Analyze &loaded Image', self)
         #self.analyze_image_action.setShortcut('Ctrl+K')
         #self.analyze_image_action.setEnabled(False)
-
         self.rename_dataset_action = QAction('&Rename Dataset', self)
         self.rename_dataset_action.setShortcut('Ctrl+T')
-
-
         self.options = QAction('Preferences', self)
         self.options.setShortcut('Ctrl+I')
-
         self.analyze_action = QAction('&Analyze labelled data',self)
         self.analyze_action.setShortcut('Ctrl+A')
         self.analyze_action.setEnabled(False)
-
         self.analyze_perimeter_action = QAction('Analyze &perimeter data',self)
         self.analyze_perimeter_action.setShortcut('Ctrl+U')
         self.analyze_perimeter_action.setEnabled(False)
-
         self.analyze_dir_vel_action = QAction('Analyze &velocity and direction of school', self)
         self.analyze_dir_vel_action.setShortcut('Ctrl+V')
         self.analyze_dir_vel_action.setEnabled(False)
-
         self.save_action = QAction('&Save data',self)
         self.save_action.setShortcut('Ctrl+S')
         self.save_action.setEnabled(False)
-
         open_action = QAction('&New file',self)
         open_action.setShortcut('Ctrl+N')
-
         self.open_data_action = QAction('&Load data',self)
         self.open_data_action.setShortcut('Ctrl+L')
-
         self.open_data_action.setEnabled(False)
-
         quit_action = QAction('&Quit program',self)
         quit_action.setShortcut('Ctrl+Q')
-
         self.reset_action = QAction('&Reset labelling info', self)
         self.reset_action.setShortcut('Ctrl+X')
         self.reset_action.setEnabled(False)
-
         self.delete_items = QAction('&Delete single item', self)
         self.delete_items.setShortcut('Ctrl+D')
         self.delete_items.setCheckable(True)
         self.delete_items.setChecked(False)
         self.delete_items.setEnabled(False)
-
         self.click_perimeter = QAction('&Select perimeter points', self)
         self.click_perimeter.setShortcut('Ctrl+B')
         self.click_perimeter.setCheckable(True)
         self.click_perimeter.setChecked(False)
         self.click_perimeter.setEnabled(False)
-
         self.click_and_click = QAction('&Point and click', self)
         self.click_and_click.setShortcut('Ctrl+P')
         self.click_and_click.setCheckable(True)
         self.click_and_click.setChecked(True)
         self.click_and_click.setEnabled(False)
-
         self.click_and_release = QAction('Drag and &release', self)
         self.click_and_release.setShortcut('Ctrl+R')
         self.click_and_release.setCheckable(True)
         self.click_and_release.setChecked(False)
         self.click_and_release.setEnabled(False)
-
         self.select_actual_measurements = QAction('Select &actual measurements', self)
         self.select_actual_measurements.setShortcut('Ctrl+M')
         self.select_actual_measurements.setCheckable(True)
         self.select_actual_measurements.setChecked(False)
         self.select_actual_measurements.setEnabled(False)
-
-        # Add actions to menus
+        # Se añaden acciones a cada menú
         file.addAction(open_action)
         file.addAction(self.open_data_action)
         file.addAction(self.save_action)
         file.addAction(self.rename_dataset_action)
         file.addAction(quit_action)
-
         labelling_methods.addAction(self.click_and_click)
         labelling_methods.addAction(self.click_and_release)
         labelling_methods.addAction(self.click_perimeter)
-
         labelling_methods.addAction(self.select_actual_measurements)
-
         delete_options.addAction(self.reset_action)
         delete_options.addAction(self.delete_items)
-
-
         analyze_info.addAction(self.analyze_action)
         analyze_info.addAction(self.analyze_perimeter_action)
         analyze_info.addAction(self.analyze_dir_vel_action)
-
         #analyze_image.addAction(self.analyze_image_action)
-
         personal_options.addAction(self.options)
-
-        # Events
+        # Eventos al hacer clic con el raton
         quit_action.triggered.connect(self.quit_trigger)
         file.triggered.connect(self.selected)
         labelling_methods.triggered.connect(self.selected)
         delete_options.triggered.connect(self.selected)
         analyze_info.triggered.connect(self.analyze)
-
         #analyze_image.triggered.connect(self.image_analyze_selected)
-
         personal_options.triggered.connect(self.showOptions)
 
-
         self.setWindowTitle("Shark gui")
-
         self.show()
 
+    # Función para activar el submenu de Análisis automatico en busca de heridas
+    # en una imagen (FUNCIÓN NO IMPLEMENTADA)
     def editAnalyzeImageLabel(self):
         pass
         #self.analyze_image_action.setEnabled(True)
 
+    # Función para activar/desactivar los menús de la barra de herramientas
+    # según el tipo de etiquetado activo o de datos registrados
     def labelChecker(self,num):
         global perimeterPointList
-
         if num == 1:
             self.analyze_action.setEnabled(True)
             self.click_perimeter.setEnabled(False)
         elif num == 0:
             self.analyze_action.setEnabled(False)
             self.click_perimeter.setEnabled(True)
-
         if len(perimeterPointList) >= 3:
             self.analyze_perimeter_action.setEnabled(True)
             self.click_and_release.setEnabled(False)
@@ -4333,28 +3701,24 @@ class Interfaz(QMainWindow):
             self.click_and_click.setEnabled(True)
             self.select_actual_measurements.setEnabled(True)
 
-
-
+    # Función para mostrar la Interfaz Básica tras regresar de la Interfaz
+    # Avanzada
     def mostrar(self):
         self.win.dialog_2.hide()
-
         #al volver se elimina analisis y se quedan datos
         self.win.restablecerDatos()
-
         self.show()
 
+    # Función para cerrar la aplicación
     def quit_trigger(self):
         qApp.quit()
 
+    # Función para escoger una opción de la barra de herramientas
     def selected(self,q):
-
         #print(q.text() + ' selected')
-
         option = q.text()
-
         if option == '&New file':
             self.win.loadImage()
-
             if imag_loaded == False:
                 self.save_action.setEnabled(True)
                 self.open_data_action.setEnabled(True)
@@ -4367,7 +3731,6 @@ class Interfaz(QMainWindow):
                 self.click_perimeter.setEnabled(True)
                 self.analyze_dir_vel_action.setEnabled(True)
                 self.select_actual_measurements.setEnabled(True)
-
         elif option == '&Rename Dataset':
             self.win.renameData()
         elif option == '&Save data':
@@ -4380,9 +3743,7 @@ class Interfaz(QMainWindow):
             self.click_and_click.setChecked(True)
             self.delete_items.setChecked(False)
             self.click_perimeter.setChecked(False)
-
             self.select_actual_measurements.setChecked(False)
-
             self.win.ClickClick()
         elif option == 'Drag and &release':
             #print('drag and r')
@@ -4390,9 +3751,7 @@ class Interfaz(QMainWindow):
             self.click_and_click.setChecked(False)
             self.delete_items.setChecked(False)
             self.click_perimeter.setChecked(False)
-
             self.select_actual_measurements.setChecked(False)
-
             self.win.ClickRelease()
         elif option == '&Delete single item':
             #print('delete item')
@@ -4400,9 +3759,7 @@ class Interfaz(QMainWindow):
             self.click_and_click.setChecked(False)
             self.delete_items.setChecked(True)
             self.click_perimeter.setChecked(False)
-
             self.select_actual_measurements.setChecked(False)
-
             self.win.DeleteItem()
         elif option == '&Reset labelling info':
             self.win.ResetInfo()
@@ -4412,32 +3769,27 @@ class Interfaz(QMainWindow):
             self.click_and_release.setChecked(False)
             self.click_and_click.setChecked(False)
             self.delete_items.setChecked(False)
-
             self.select_actual_measurements.setChecked(False)
-
             self.win.ClickPerimeter()
         elif option == 'Select &actual measurements':
             self.click_perimeter.setChecked(False)
             self.click_and_release.setChecked(False)
             self.click_and_click.setChecked(False)
             self.delete_items.setChecked(False)
-
             self.select_actual_measurements.setChecked(True)
-
             self.win.SelectDist()
 
+    # Función para analizar la imagen escogida de forma automatica
+    # (FUNCIONALIDAD NO IMPLEMENTADA)
     def image_analyze_selected(self,q):
-
         option = q.text()
-
         if option == 'Analyze &loaded Image':
             self.win.ImageAnalyze()
 
+    # Función para escoger el tipo de análisis
     def analyze(self,q):
         global perAnalyze
-
         #print(q.text() + ' selected')
-
         option = q.text()
 
         if option == '&Analyze labelled data':
@@ -4445,21 +3797,18 @@ class Interfaz(QMainWindow):
         elif option == 'Analyze &perimeter data':
             perAnalyze = True
             self.win.PerimeterAnalyze()
-
         elif option == 'Analyze &velocity and direction of school':
             self.win.VelDirAnalyze()
-
 
         if errorAnalyzing == False:
             self.hide()
 
+    # Función para mostrar el menú de Preferencias
     def showOptions(self):
         #print('Mostramos nuevo Widget')
         self.optMen.show()
-
-
-
-
+        
+# Inicializacion del programa
 if __name__ == '__main__':
     import sys
     app = QtWidgets.QApplication(sys.argv)
