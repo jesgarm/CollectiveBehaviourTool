@@ -166,14 +166,12 @@ class OptionsMenu(QtWidgets.QWidget):
         self.labelled_data_label = QtWidgets.QLabel('Labelled data')
         self.labelled_analyzed_data_label = QtWidgets.QLabel('Labelled data analyzed')
         self.perimeter_label = QtWidgets.QLabel('Perimeter')
-        self.vector1_label = QtWidgets.QLabel('Vector 1')
-        self.vector2_label = QtWidgets.QLabel('Vector 2')
-        self.dot1_label = QtWidgets.QLabel('Dot 1')
-        self.dot2_label = QtWidgets.QLabel('Dot 2')
-        self.layers_label = QtWidgets.QLabel('Number of layers')
+        self.vector1_label = QtWidgets.QLabel('Aligned individuals')
+        self.vector2_label = QtWidgets.QLabel('Non-aligned individuals')
+        self.dot1_label = QtWidgets.QLabel('Close neighbors')
+        self.dot2_label = QtWidgets.QLabel('Far neighbors')
+        self.layers_label = QtWidgets.QLabel('Density map increments')
         self.layers_value = QtWidgets.QLabel("0")
-
-
 
         # Se conectan los diferentes elementos del menu de Preferencias
         self.labelled_data_color.clicked.connect(self.labelled_data_color_dialog)
