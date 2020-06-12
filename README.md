@@ -10,7 +10,7 @@ This tool is executed using a python script. All folders and files are created a
 
 # Installation
 
-The libraries needed to run the script are as follows:
+The minimum required version of the libraries needed to run the script are as follows:
 
 Numpy 1.16.4  
 Scikit-learn 0.20.3   
@@ -20,7 +20,7 @@ imageio 2.5.0
 scipy 1.2.1   
 tqdm 4.32.2  
 Opencv-python 4.1.0.25  
-imutils 0.5.2 
+imutils 0.5.2   
 statistics 1.0.3.5  
 
 All the libraries can be installed via pip
