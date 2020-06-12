@@ -26,5 +26,5 @@ statistics 1.0.3.5
 All the libraries can be installed via pip
 
 # Run the script
-Run the script using the following command: python shark_gui_01.py
+Run the script using the following command: python collective_behaviour_tool.py
 
