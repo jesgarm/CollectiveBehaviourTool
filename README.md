@@ -22,6 +22,7 @@ tqdm 4.32.2
 Opencv-python 4.1.0.25  
 imutils 0.5.2   
 statistics 1.0.3.5  
+matplotlib 3.3.3
 
 All the libraries can be installed via pip
 
