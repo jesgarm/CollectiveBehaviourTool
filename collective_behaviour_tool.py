@@ -1,4 +1,4 @@
-# Last update 27/05/2020
+# Last update 22/01/2021
 
 # Se importan los paquetes necesarios para el correcto funcionamiento de la
 # aplicación
@@ -2382,7 +2382,7 @@ class DataTable(QtWidgets.QTableWidget):
         global nameofFileFiltered
         path = cacheDir + "/" + nameofFileFiltered + cacheType +".csv"
         if path != '':
-            with open(path, 'w') as csv_file:
+            with open(path, 'w', newline='') as csv_file:
                 writer = csv.writer(csv_file, dialect='excel')
                 for row in range(self.rowCount()):
                     row_data = []
