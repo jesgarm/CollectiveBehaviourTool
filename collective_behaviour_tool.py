@@ -1,4 +1,4 @@
-# Last update 22/01/2021
+# Last update 27/01/2021
 
 # Se importan los paquetes necesarios para el correcto funcionamiento de la
 # aplicación
@@ -59,6 +59,7 @@ valuesYPerimeter = []
 s_values = []
 s_pointList = []
 v_values = []
+
 calcGrosor = 11
 calcGrosorAnalyzed = 10
 
@@ -121,6 +122,8 @@ areaROI = 0
 areaROI_cm = 0
 cte_pos_x = 2
 cte_pos_y = 12
+
+primeraLlamada = False
 
 
 
@@ -700,6 +703,16 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             imag_loaded = self._empty
             self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag) #ScrollHandDrag
             self._photo.setPixmap(pixmap)
+
+            # Redimensiono la escena en funcion de la imagen nueva
+            self._scene.width = pixmap.width
+            self._scene.height = pixmap.height
+
+            #print("[INFO] Cargo una imagen en analisis con unas dimensiones X,Y: {}, {}".format(self._scene.width(), self._scene.height()))
+
+            # Se pinta para que se reescale el grosor de los items
+            self.rePaintWithZoom(self._zoom)
+
         else:
             self._empty = True
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
@@ -740,9 +753,11 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         del convexYHull[:]
         x = self._scene.width()
         y = self._scene.height()
+
         zoomPararestar = 9
         calcGrosor_max = 10
 
+        '''
         if x >= 3800 and y >= 2100:
             calcGrosor_max = 10
             zoomPararestar = 9
@@ -755,11 +770,27 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         else:
             calcGrosor_max = 2
             zoomPararestar = 1
+        '''
+
+        if x >= 3800 or y >= 2100:
+            calcGrosor_max = 10
+            zoomPararestar = 9
+        elif x < 3800 and x >= 2300 or y < 2100 and y >= 1500:
+            calcGrosor_max = 7
+            zoomPararestar = 6
+        elif x < 2300 and x >= 1250 or y < 1500 and y >= 700:
+            calcGrosor_max = 4
+            zoomPararestar = 3
+        else:
+            calcGrosor_max = 2
+            zoomPararestar = 1
 
         if zoom <= zoomPararestar:
             calcGrosorAnalyzed = calcGrosor_max-zoom
         else:
             calcGrosorAnalyzed = 1
+
+        #print("[INFO] X,Y: {}, {}, Zoom: {}, Zoom para restar: {}, Grosor calculado: {}, Grosor maximo: {}".format(x, y, zoom, zoomPararestar, calcGrosorAnalyzed, calcGrosor_max))
 
         self.resetView(3)
         self.resetView(2)
@@ -948,6 +979,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         gifFileName = gifFileName[:-1]
         for i in tqdm(range(1)):
             imageio.mimsave('generatedGifs/'+gifFileName+'_animation.gif', imagesFrames, duration = timElapse)
+        self.msg = QtWidgets.QMessageBox.about(self,"Gif saved","Gif has been saved sucessfully")
 
     # Funcion para dibujar la velocidad y el angulo de la escuela analizada
     def drawVelandDir(self):
@@ -1188,8 +1220,9 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         video = cv2.VideoWriter(video_name,0,1,(width,height))
         for image in images:
             video.write(cv2.imread(os.path.join(image_folder,image)))
-        cv2.destroyAllWindows
+        cv2.destroyAllWindows()
         video.release()
+        self.msg = QtWidgets.QMessageBox.about(self,"Video saved","Video has been saved sucessfully")
 
     # Funcion para calcular la velocidad y la dirección
     def calculateVelandDir(self):
@@ -1350,6 +1383,9 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         height,width,channels = imageReConverted.shape
 
         if var == 0:
+
+            #print("[INFO] Calculo el mapa de densidad etiquetado individual...")
+
             hull = ConvexHull(midPointList)
             long = len(hull.vertices)
             for i in range(0,long):
@@ -1367,6 +1403,9 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             maxconvexValY = max(convexYHull)
             listadoDePuntos = convexPointList
         elif var == 1:
+
+            #print("[INFO] Calculo el mapa de densidad etiquetado colectivo...")
+
             listadoDePuntos = perimeterPointList
 
         #Una vez obtenidos puntos ConvexHull, buscamos obtener las ROI
@@ -1374,7 +1413,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         roi_corners = np.array(listadoDePuntos)
         channel_count = imageFiltered.shape[2]
         ignore_mask_color = (255,)*channel_count
-        cv2.fillConvexPoly(mask,roi_corners,ignore_mask_color)
+        #cv2.fillConvexPoly(mask,roi_corners,ignore_mask_color) # A veces hay poligonos no convexos NO VALIDO
+        cv2.fillPoly(mask, pts=[roi_corners], color=ignore_mask_color)
         masked_image = cv2.bitwise_and(imageFiltered,mask)
         hsv_img_original = cv2.cvtColor(masked_image, cv2.COLOR_RGB2HSV)
         h,s,v = cv2.split(hsv_img_original)
@@ -1594,7 +1634,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                     roi_corners = np.array(perimeterPointList)
                     channel_count = imageReConverted.shape[2]
                     ignore_mask_color = (255,)*channel_count
-                    cv2.fillConvexPoly(mask,roi_corners,ignore_mask_color)
+                    #cv2.fillConvexPoly(mask,roi_corners,ignore_mask_color) Hay poligonos NO CONVEXOS NO VALIDO
+                    cv2.fillPoly(mask, pts=[roi_corners], color=ignore_mask_color)
                     masked_image = cv2.bitwise_and(imageReConverted,mask)
                     contours_image = cv2.cvtColor(masked_image, cv2.COLOR_BGR2GRAY)
                     cnts, hierarchy = cv2.findContours(contours_image.copy(),
@@ -1661,6 +1702,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global color_dot2
         global color_labelled_analyzed_data
 
+        #print("[INFO] Pinto con un grosor: {}".format(calcGrosorAnalyzed))
+
         self.calcMedian()
 
         for i in range(0,tiburonesTotales):
@@ -1685,6 +1728,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             valV = float(vec_v[i])
             valDist = float(neighList[i])
             valAngle = float(angleList[i])
+
+
 
 
             # Dibujar punto medio
@@ -1770,6 +1815,8 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
     labelChecker = QtCore.pyqtSignal(int)
     tableRowCounter = QtCore.pyqtSignal()
     editAnalyzeImageLabel = QtCore.pyqtSignal()
+    resetEmit = QtCore.pyqtSignal()
+
 
 
     # Funcion de inicializacion de la clase
@@ -1837,6 +1884,19 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
             imag_loaded = self._empty
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag) #ScrollHandDrag
             self._photo.setPixmap(pixmap)
+
+            # Redimensiono la escena en funcion de la imagen nueva
+            self._scene.width = pixmap.width
+            self._scene.height = pixmap.height
+
+            #print(self._scene.width)
+
+            #print(type(self._scene.width())) # = pixmap.width()
+            #self._scene.height() = pixmap.height()
+
+            #print("[INFO] Cargo una imagen en etiquetado con unas dimensiones X,Y: {}, {}".format(self._scene.width(), self._scene.height()))
+
+
         else:
             self._empty = True
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
@@ -1896,12 +1956,15 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
             global color_dot2
             global color_labelled_analyzed_data
 
+            #print("[INFO] Repinto con nivel de zoom en etiquetado")
+
             x = self._scene.width()
             y = self._scene.height()
 
             zoomPararestar = 10
             calcGrosor_max = 11
 
+            '''
             if x >= 3800 and y >= 2100:
                 calcGrosor_max = 11
                 zoomPararestar = 10
@@ -1914,11 +1977,27 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
             else:
                 calcGrosor_max = 3
                 zoomPararestar = 2
+            '''
+
+            if x >= 3800 or y >= 2100:
+                calcGrosor_max = 11
+                zoomPararestar = 10
+            elif x < 3800 and x >= 2300 or y < 2100 and y >= 1500:
+                calcGrosor_max = 8
+                zoomPararestar = 7
+            elif x < 2300 and x >= 1250 or y < 1500 and y >= 700:
+                calcGrosor_max = 5
+                zoomPararestar = 4
+            else:
+                calcGrosor_max = 3
+                zoomPararestar = 2
 
             if zoom <= zoomPararestar:
                 calcGrosor = calcGrosor_max-zoom
             else:
                 calcGrosor = 1
+
+            #print("[INFO] X,Y: {}, {}, Zoom: {}, Zoom para restar: {}, Grosor calculado: {}, Grosor maximo: {}".format(x, y, zoom, zoomPararestar, calcGrosor, calcGrosor_max))
 
             c = QtGui.QColor(color_labelled_data)
             d = QtGui.QColor(color_perimeter)
@@ -2204,6 +2283,9 @@ class PhotoDataViewer(QtWidgets.QGraphicsView):
 
     # Funcion para emitir el reseteo de datos
     def resetEmit(self):
+
+        #print("[INFO] Se resetea toda la informacion de etiquetado...")
+
         self.sharkCount = 0
         self.perimeterPointCounter = 0
         self.startSelecting = True
@@ -2332,6 +2414,7 @@ class DataTable(QtWidgets.QTableWidget):
     sharkUpdater = QtCore.pyqtSignal()
     loadLinesData = QtCore.pyqtSignal()
     labelChecker = QtCore.pyqtSignal(int)
+    resetEmit = QtCore.pyqtSignal()
 
     # Funcion para inicializar la clase
     def __init__(self, r, c):
@@ -2361,7 +2444,7 @@ class DataTable(QtWidgets.QTableWidget):
         cacheTitle = None
         cacheInfo = None
 
-        if var == 0: #Datos sin analizar
+        if var == 0 or var == 9: #Datos sin analizar
             cacheDir = 'labelledData'
             cacheType = "_labelled"
             cacheTitle = 'Labelled data saved'
@@ -2381,7 +2464,11 @@ class DataTable(QtWidgets.QTableWidget):
 
         global nameofFileFiltered
         path = cacheDir + "/" + nameofFileFiltered + cacheType +".csv"
-        if path != '':
+
+        if var == 9:
+            path, _ = QFileDialog.getSaveFileName(self, 'Save CSV data', os.getcwd(), 'CSV(*.csv)')
+
+        if path[0] != '':
             with open(path, 'w', newline='') as csv_file:
                 writer = csv.writer(csv_file, dialect='excel')
                 for row in range(self.rowCount()):
@@ -2400,6 +2487,13 @@ class DataTable(QtWidgets.QTableWidget):
     def open_sheet(self):
         path = QFileDialog.getOpenFileName(self, 'Open CSV', os.getcwd(), 'CSV(*.csv)')
         if path[0] != '':
+
+            global primeraLlamada
+            primeraLlamada = False
+            # Se reinician todas las variables de etiquetado
+            self.resetEmit.emit()
+
+
             with open(path[0], 'r') as csv_file: #rb
                 self.setRowCount(0)
                 self.setColumnCount(4)
@@ -2415,7 +2509,6 @@ class DataTable(QtWidgets.QTableWidget):
             #Se activa el menu de analisis
             self.labelChecker.emit(1)
 
-        if path[0] != '':
             numColumnas = self.columnCount()
             if numColumnas > 4:
                 self.msg = QtWidgets.QMessageBox.about(self,'Error loading',"Please load non analyzed data")
@@ -2423,6 +2516,8 @@ class DataTable(QtWidgets.QTableWidget):
             cargarDatos = True
             self.sharkUpdater.emit()
             self.loadLinesData.emit()
+        else:
+            return False
 
 # Clase principal que contiene las dos clases: numerica y gráfica
 class Window(QtWidgets.QWidget):
@@ -2442,7 +2537,10 @@ class Window(QtWidgets.QWidget):
         self.label_status = QtWidgets.QLabel('Status...')
         self.label_status.setStyleSheet("font: bold 14px")
         self.splitter = QSplitter(Qt.Horizontal)
-        self.primeraLlamada = False
+
+        global primeraLlamada
+        primeraLlamada = False
+
         self.viewer.labelUpdater.connect(self.labelUpdater)
         self.data.sharkUpdater.connect(self.sharkUpdater)
         self.data.loadLinesData.connect(self.loadLinesData)
@@ -2451,6 +2549,9 @@ class Window(QtWidgets.QWidget):
         self.viewer.ResetInfoSig.connect(self.ResetInfo)
         self.dialog.viewerRes.editVelDirTable.connect(self.editVelDirTable)
         self.viewer.tableRowCounter.connect(self.data.counter)
+
+        # Se conecta el reset del data con el del viewer
+        self.data.resetEmit.connect(self.viewer.resetEmit)
 
         # Se organiza la disposicion de los elementos en la interfaz
         VBlayout = QtWidgets.QVBoxLayout()
@@ -2532,6 +2633,9 @@ class Window(QtWidgets.QWidget):
 
     # Funcion de reseteo de datos
     def restablecerDatos(self):
+
+        #print("[INFO] Yo tambien reseteo cosas...")
+
         global valuesXTail
         global valuesYTail
         global valuesXHead
@@ -2549,7 +2653,8 @@ class Window(QtWidgets.QWidget):
         self.data.setRowCount(1)
         self.data.setColumnCount(4)
         self.startSelecting = True
-        self.primeraLlamada = False
+        global primeraLlamada
+        primeraLlamada = False
 
         if doubleClick == True:
             self.label_status.setText('Point and click. Status: Select Tail')
@@ -2602,12 +2707,17 @@ class Window(QtWidgets.QWidget):
         col_headers = ['Tail X', 'Tail Y', 'Head X', 'Head Y']
         self.data.setHorizontalHeaderLabels(col_headers)
         self.data.setRowCount(1)
-        self.primeraLlamada = False
+        global primeraLlamada
+        primeraLlamada = False
         self.viewer.resetEmit()
         self.viewer.toggleDragMode()
 
     # Funcion de reseteo de datos
     def ResetInfo(self):
+
+
+        #print("[INFO] Hago un reseteo de todo...")
+
         global doubleClick
         global perimeterClick
         if doubleClick == True:
@@ -2622,7 +2732,8 @@ class Window(QtWidgets.QWidget):
         col_headers = ['Tail X', 'Tail Y', 'Head X', 'Head Y']
         self.data.setHorizontalHeaderLabels(col_headers)
         self.data.setRowCount(1)
-        self.primeraLlamada = True #esto estaba en False
+        global primeraLlamada
+        primeraLlamada = True #esto estaba en False
         global cargarDatos
         cargarDatos = False
         self.viewer.resetEmit()
@@ -2638,17 +2749,20 @@ class Window(QtWidgets.QWidget):
         global valuesYHead
         global valuesXTail
         global valuesYTail
+
+        global primeraLlamada
+
         if num == 1:
             if doubleClick == True:
                 self.label_status.setText('Point and click. Status: Select Tail')
             elif doubleClick == False:
                 self.label_status.setText('Drag and release. Status: Select Tail')
-            if self.primeraLlamada == True:
+            if primeraLlamada == True:
                 self.data.setItem(tibur,2, QtWidgets.QTableWidgetItem(str(int(pos.x()))))
                 valuesXHead.append(self.data.item(tibur,2).text())
                 self.data.setItem(tibur,3, QtWidgets.QTableWidgetItem(str(int(pos.y()))))
                 valuesYHead.append(self.data.item(tibur,3).text())
-            self.primeraLlamada = True
+            primeraLlamada = True
         elif num == 2:
             if doubleClick == True:
                 self.label_status.setText('Point and click. Status: Select Head')
@@ -2674,22 +2788,9 @@ class Window(QtWidgets.QWidget):
     # Funcion para cargar los datos del ordenador en el programa
     def loadData(self):
         if imag_loaded == False:
-            #Se reinician los labels de status al cargar datos
-            global valuesXTail
-            del valuesXTail[:]
-            global valuesYTail
-            del valuesYTail[:]
-            global valuesXHead
-            del valuesXHead[:]
-            global valuesYHead
-            del valuesYHead[:]
-
-            self.primeraLlamada = False
-            self.label_status.setText('Status...')
-            self.editPixInfo.setText(' ')
-            self.viewer.resetEmit()
-            self.data.open_sheet()
-
+            checker = self.data.open_sheet()
+            if checker == False:
+                print("[INFO] Se cancela el cargado de datos...")
         else:
             self.showDialog()
 
@@ -2842,8 +2943,10 @@ class Window(QtWidgets.QWidget):
             self.dialog.viewerRes.ImageProcess(1,0)
         else:
             self.dialog.viewerRes.ImageProcess(0,0)
+            self.dialog_2 = DataResults(1,1)
 
-        self.dialog_2 = DataResults(1,1)
+        #self.dialog_2 = DataResults(1,1)
+
         if ratio_cm_pixel != 0:
             x = self.dialog.viewerRes._scene.width()
             y = self.dialog.viewerRes._scene.height()
@@ -3132,13 +3235,18 @@ class Interfaz(QMainWindow):
         self.save_action = QAction('&Save data',self)
         self.save_action.setShortcut('Ctrl+S')
         self.save_action.setEnabled(False)
-        open_action = QAction('&New file',self)
-        open_action.setShortcut('Ctrl+N')
+
+        self.save_as_action = QAction('Save &as',self)
+        self.save_as_action.setShortcut('Ctrl+E')
+        self.save_as_action.setEnabled(False)
+
+        self.open_action = QAction('&New file',self)
+        self.open_action.setShortcut('Ctrl+N')
         self.open_data_action = QAction('&Load data',self)
         self.open_data_action.setShortcut('Ctrl+L')
         self.open_data_action.setEnabled(False)
-        quit_action = QAction('&Quit program',self)
-        quit_action.setShortcut('Ctrl+Q')
+        self.quit_action = QAction('&Quit program',self)
+        self.quit_action.setShortcut('Ctrl+Q')
         self.reset_action = QAction('&Reset labelling info', self)
         self.reset_action.setShortcut('Ctrl+X')
         self.reset_action.setEnabled(False)
@@ -3168,11 +3276,12 @@ class Interfaz(QMainWindow):
         self.select_actual_measurements.setChecked(False)
         self.select_actual_measurements.setEnabled(False)
         # Se añaden acciones a cada menú
-        file.addAction(open_action)
+        file.addAction(self.open_action)
         file.addAction(self.open_data_action)
         file.addAction(self.save_action)
+        file.addAction(self.save_as_action)
         file.addAction(self.rename_dataset_action)
-        file.addAction(quit_action)
+        file.addAction(self.quit_action)
         labelling_methods.addAction(self.click_and_click)
         labelling_methods.addAction(self.click_and_release)
         labelling_methods.addAction(self.click_perimeter)
@@ -3185,7 +3294,7 @@ class Interfaz(QMainWindow):
         #analyze_image.addAction(self.analyze_image_action)
         personal_options.addAction(self.options)
         # Eventos al hacer clic con el raton
-        quit_action.triggered.connect(self.quit_trigger)
+        self.quit_action.triggered.connect(self.quit_trigger)
         file.triggered.connect(self.selected)
         labelling_methods.triggered.connect(self.selected)
         delete_options.triggered.connect(self.selected)
@@ -3226,7 +3335,10 @@ class Interfaz(QMainWindow):
     # Función para mostrar la Interfaz Básica tras regresar de la Interfaz
     # Avanzada
     def mostrar(self):
-        self.win.dialog_2.hide()
+        global perAnalyze
+
+        if not perAnalyze:
+            self.win.dialog_2.hide()
         #al volver se elimina analisis y se quedan datos
         self.win.restablecerDatos()
         self.show()
@@ -3242,6 +3354,7 @@ class Interfaz(QMainWindow):
             self.win.loadImage()
             if imag_loaded == False:
                 self.save_action.setEnabled(True)
+                self.save_as_action.setEnabled(True)
                 self.open_data_action.setEnabled(True)
                 self.reset_action.setEnabled(True)
                 self.delete_items.setEnabled(True)
@@ -3256,6 +3369,8 @@ class Interfaz(QMainWindow):
             self.win.renameData()
         elif option == '&Save data':
             self.win.saveData(0)
+        elif option == 'Save &as':
+            self.win.saveData(9)
         elif option == '&Load data':
             self.win.loadData()
         elif option == '&Point and click':
