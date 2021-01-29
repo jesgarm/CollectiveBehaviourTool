@@ -1,4 +1,4 @@
-# Last update 28/01/2021
+# Last update 29/01/2021
 
 # Se importan los paquetes necesarios para el correcto funcionamiento de la
 # aplicación
@@ -124,6 +124,7 @@ cte_pos_x = 2
 cte_pos_y = 12
 
 primeraLlamada = False
+areaCalculated = False ###-
 
 
 
@@ -1529,6 +1530,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global ratio_cm_pixel_cuadrado
         global areaROI
         global areaROI_cm
+        global areaCalculated
 
         if var == 0:
             valCenterMassX = statistics.mean(valuesXMed)
@@ -1635,11 +1637,11 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 self._scene.addItem(linea_item)
                 self.setScene(self._scene)
 
-                if ratio_cm_pixel != 0:
+                if ratio_cm_pixel != 0 and not areaCalculated:
                     # Se calcula el area que ocupa el perimetro (en pixeles)
                     # y se convierte a cm2
 
-                    print("[INFO] Calculo areas felizmente...")
+                    #print("[INFO] Calculo areas felizmente...")
 
                     rect = QtCore.QRectF(self._photo.pixmap().rect())
                     image = QtGui.QImage(rect.width(),rect.height(), QImage.Format_ARGB32_Premultiplied)
@@ -1674,6 +1676,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                     texto.setData(1,7)
                     self._scene.addItem(texto)
                     self.setScene(self._scene)
+
+                    areaCalculated = True
 
             nameofFile = imagePath.split('/')[-1]
             nameofFileFiltered = nameofFile.split('.')[0]
@@ -2651,7 +2655,7 @@ class Window(QtWidgets.QWidget):
     # Funcion de reseteo de datos
     def restablecerDatos(self):
 
-        print("[INFO] Yo tambien reseteo cosas...")
+        #print("[INFO] Yo tambien reseteo cosas...")
 
         global valuesXTail
         global valuesYTail
@@ -2667,6 +2671,9 @@ class Window(QtWidgets.QWidget):
 
         global convexPointList ##-
         del convexPointList[:] ##-
+
+        global areaCalculated ###-
+        areaCalculated = False ###-
 
 
         self.data.clear()
