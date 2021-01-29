@@ -1,4 +1,4 @@
-# Last update 27/01/2021
+# Last update 28/01/2021
 
 # Se importan los paquetes necesarios para el correcto funcionamiento de la
 # aplicación
@@ -60,8 +60,8 @@ s_values = []
 s_pointList = []
 v_values = []
 
-calcGrosor = 11
-calcGrosorAnalyzed = 10
+calcGrosor = 5 # 11
+calcGrosorAnalyzed = 4 # 10
 
 # Variables fichero configuración de Preferencias
 color_labelled_data = "#000000"
@@ -521,6 +521,7 @@ class WindowResults(QtWidgets.QWidget):
     # Funcion para pintar el mapa de densidad 2D
     def drawHeatMap(self):
         global perAnalyze
+        global imagePath
 
         if self.cb_density.isChecked():
             if densityCalculated == False:
@@ -711,7 +712,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
             #print("[INFO] Cargo una imagen en analisis con unas dimensiones X,Y: {}, {}".format(self._scene.width(), self._scene.height()))
 
             # Se pinta para que se reescale el grosor de los items
-            self.rePaintWithZoom(self._zoom)
+            #self.rePaintWithZoom(self._zoom) ##-
 
         else:
             self._empty = True
@@ -1419,9 +1420,20 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         hsv_img_original = cv2.cvtColor(masked_image, cv2.COLOR_RGB2HSV)
         h,s,v = cv2.split(hsv_img_original)
 
+
+        #cv2.imshow("Original", imageReConverted)
+        #cv2.imshow("mask", mask)
+        #cv2.imshow("v", v)
+        #cv2.waitKey(1)
+
+
+
         # Funcion para obtener los valores HEX de la gama de colores
         self.pruebaHexValuesArray()
         posOfArrays = np.where(v > 0) # Index en X,Y de los puntos mayores a 0
+
+        #print("[INFO] Hay un total de posOfArrays: {}".format(len(posOfArrays[0])))
+        #print("[INFO] Hay un total de listadoDePuntos: {}".format(len(listadoDePuntos)))
 
         # Se buscan los valores MAX y MIN de la componente V de la imagen HSV
         # dichos valores se buscan solo en la zona de la ROI no en toda la imagen
@@ -1450,6 +1462,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         self.pixmap = QPixmap("cache_heatmap.JPG")
         self.setPhoto(self.pixmap)
         densityCalculated = True
+
+        self.rePaintWithZoom(self._zoom) ##-
 
     # Funcion para interpolar valores
     def mapeador(self, x,in_min,in_max,out_min,out_max):
@@ -1624,6 +1638,9 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
                 if ratio_cm_pixel != 0:
                     # Se calcula el area que ocupa el perimetro (en pixeles)
                     # y se convierte a cm2
+
+                    print("[INFO] Calculo areas felizmente...")
+
                     rect = QtCore.QRectF(self._photo.pixmap().rect())
                     image = QtGui.QImage(rect.width(),rect.height(), QImage.Format_ARGB32_Premultiplied)
                     painter = QtGui.QPainter(image)
@@ -2634,7 +2651,7 @@ class Window(QtWidgets.QWidget):
     # Funcion de reseteo de datos
     def restablecerDatos(self):
 
-        #print("[INFO] Yo tambien reseteo cosas...")
+        print("[INFO] Yo tambien reseteo cosas...")
 
         global valuesXTail
         global valuesYTail
@@ -2647,6 +2664,11 @@ class Window(QtWidgets.QWidget):
         global valuesYPerimeter
         del valuesYPerimeter[:]
         global ratio_cm_pixel
+
+        global convexPointList ##-
+        del convexPointList[:] ##-
+
+
         self.data.clear()
         col_headers = ['Tail X', 'Tail Y', 'Head X', 'Head Y']
         self.data.setHorizontalHeaderLabels(col_headers)
@@ -3341,6 +3363,7 @@ class Interfaz(QMainWindow):
             self.win.dialog_2.hide()
         #al volver se elimina analisis y se quedan datos
         self.win.restablecerDatos()
+        self.labelChecker(9) # numero al azar ##-
         self.show()
 
     # Función para cerrar la aplicación
