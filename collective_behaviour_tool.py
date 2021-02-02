@@ -1,4 +1,4 @@
-# Last update 29/01/2021
+# Last update 02/02/2021
 
 # Se importan los paquetes necesarios para el correcto funcionamiento de la
 # aplicación
@@ -73,6 +73,7 @@ color_dot1 = "#0000ff"
 color_dot2 = "#008000"
 color_layers = "#0000ff"
 number_of_layers = 255
+percentage_subsampling = 100
 
 convexXHull = []
 convexYHull = []
@@ -164,6 +165,14 @@ class OptionsMenu(QtWidgets.QWidget):
         self.slider_layers.setTickInterval(40)
         self.slider_layers.setSingleStep(1)
         self.slider_layers.setMaximum(255)
+
+        self.slider_subsampling = QSlider(Qt.Horizontal)
+        self.slider_subsampling.setFocusPolicy(Qt.StrongFocus)
+        self.slider_subsampling.setTickPosition(QSlider.TicksBelow)
+        self.slider_subsampling.setTickInterval(10)
+        self.slider_subsampling.setSingleStep(1)
+        self.slider_subsampling.setMaximum(100)
+
         #self.slider_layers.setValue(number_of_layers)
         self.labelled_analyzed_data_color = QPushButton()
         self.labelled_analyzed_data_color.setStyleSheet("background-color: green")
@@ -177,6 +186,9 @@ class OptionsMenu(QtWidgets.QWidget):
         self.layers_label = QtWidgets.QLabel('Density map increments')
         self.layers_value = QtWidgets.QLabel("0")
 
+        self.subsampling_label = QtWidgets.QLabel('3D Density map subsampling %')
+        self.subsampling_value = QtWidgets.QLabel("0")
+
         # Se conectan los diferentes elementos del menu de Preferencias
         self.labelled_data_color.clicked.connect(self.labelled_data_color_dialog)
         self.perimeter_color.clicked.connect(self.perimeter_color_dialog)
@@ -188,6 +200,8 @@ class OptionsMenu(QtWidgets.QWidget):
         self.layers_color.clicked.connect(self.layers_color_dialog)
         self.savePreferencesButton.clicked.connect(self.saveDataInTextFile)
         self.slider_layers.valueChanged.connect(self.changeValue)
+
+        self.slider_subsampling.valueChanged.connect(self.changeSubsamplingValue)
 
         # Se añaden al layout los diferentes elementos del menu de Preferencias
         grid = QtWidgets.QGridLayout(self)
@@ -211,7 +225,12 @@ class OptionsMenu(QtWidgets.QWidget):
         grid.addWidget(self.slider_layers,10,0)
         grid.addWidget(self.layers_value,10,1)
         grid.addWidget(self.layers_color,10,2)
-        grid.addWidget(self.savePreferencesButton,11,0)
+
+        grid.addWidget(self.subsampling_label,11,0)
+        grid.addWidget(self.slider_subsampling,12,0)
+        grid.addWidget(self.subsampling_value,12,1)
+
+        grid.addWidget(self.savePreferencesButton,13,0)
 
 
         # En caso de que exista un fichero de configuracion previo, se cargan
@@ -226,6 +245,7 @@ class OptionsMenu(QtWidgets.QWidget):
             global color_labelled_analyzed_data
             global number_of_layers
             global color_layers
+            global percentage_subsampling
 
             file = open("config.txt","r")
 
@@ -258,6 +278,11 @@ class OptionsMenu(QtWidgets.QWidget):
             color_layers = string[:-1]
             self.layers_color.setStyleSheet("QWidget { background-color: %s}" % color_layers)
 
+            string = file.readline()
+            percentage_subsampling = int(string[:-1])
+            self.subsampling_value.setText(str(percentage_subsampling))
+            self.slider_subsampling.setValue(percentage_subsampling)
+
         # Si no existe el fichero de configuracion, se crea uno nuevo
         else:
             color_labelled_data = self.labelled_data_color.palette().color(QtGui.QPalette.Base).name()
@@ -269,12 +294,19 @@ class OptionsMenu(QtWidgets.QWidget):
             color_labelled_analyzed_data = self.labelled_analyzed_data_color.palette().color(QtGui.QPalette.Base).name()
             color_layers = self.layers_color.palette().color(QtGui.QPalette.Base).name()
             self.slider_layers.setValue(number_of_layers)
+            self.slider_subsampling.setValue(percentage_subsampling)
 
     # Funcion para cambiar el numero de capas de densidad
     def changeValue(self,val):
         global number_of_layers
         number_of_layers = val
         self.layers_value.setText(str(val))
+
+    # Funcion para cambiar el porcentaje de submuestreo de puntos del mapa de densidad 3D
+    def changeSubsamplingValue(self,val):
+        global percentage_subsampling
+        percentage_subsampling = val
+        self.subsampling_value.setText(str(val))
 
     # Funcion para almacenar el fichero de configuracion en el disco
     def saveDataInTextFile(self):
@@ -288,6 +320,7 @@ class OptionsMenu(QtWidgets.QWidget):
         global color_labelled_analyzed_data
         global number_of_layers
         global color_layers
+        global percentage_subsampling
 
         file = open("config.txt","w")
 
@@ -300,6 +333,7 @@ class OptionsMenu(QtWidgets.QWidget):
         file.write(color_labelled_analyzed_data+"\n")
         file.write(str(number_of_layers)+"\n")
         file.write(color_layers+"\n")
+        file.write(str(percentage_subsampling)+"\n")
         file.close()
         self.hide()
 
@@ -1339,10 +1373,34 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
     def Density3DProcess(self):
         global posOfArrays
         global v_values
+        global percentage_subsampling
+
+        print("[INFO] Total points: {}".format(len(v_values)))
+
+        # Se coge una submuestra del mapa de densidad
+        percent = percentage_subsampling / 100
+        idxs = np.random.randint(0, len(posOfArrays[0]), size=(int(len(posOfArrays[0]) * percent),))
+
+        posArrayX = []
+        posArrayY = []
+        vvalues = []
+
+        posArrayX = list(posOfArrays[0])
+        posArrayY = list(posOfArrays[1])
+
+        posArrayX = np.array(posArrayX)[idxs.astype(int)]
+        posArrayY = np.array(posArrayY)[idxs.astype(int)]
+        vvalues = np.array(v_values)[idxs.astype(int)]
+
+        print("[INFO] Points after subsampling: {}".format(len(posArrayX)))
+        #print(len(posArrayX))
+        #print(len(posArrayY))
+        #print(len(vvalues))
 
         fig = plt.figure()
         ax = Axes3D(fig)
-        surf = ax.plot_trisurf(posOfArrays[0],posOfArrays[1],v_values, cmap=cm.jet, linewidth=0.1)
+        #surf = ax.plot_trisurf(posOfArrays[0],posOfArrays[1],v_values, cmap=cm.jet, linewidth=0.1)
+        surf = ax.plot_trisurf(posArrayX,posArrayY,vvalues, cmap=cm.jet, linewidth=0.1)
         fig.colorbar(surf, shrink=0.5, aspect=5)
         plt.show()
 
@@ -1380,6 +1438,7 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global valuesYPerimeter
         global convexPointList
         global perimeterPointList
+        global nameofFileFiltered
 
         imageFiltered = cv2.blur(imageReConverted,(5,5)) #15,15 o 10,10
         height,width,channels = imageReConverted.shape
@@ -1462,7 +1521,30 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         # Se guarda el mapa de calor solo para hacer prueba de gif
         self.pixmap = QPixmap("cache_heatmap.JPG")
         self.setPhoto(self.pixmap)
-        densityCalculated = True
+
+
+        # Se guardan los datos del mapa de calor en el ordenador
+
+        if densityCalculated == False:
+            # Creamos directory o comprobamos si existe
+            dirName = 'densityMapData'
+
+            if not os.path.exists(dirName):
+                os.mkdir(dirName)
+            else:
+                pass
+
+            file = open(dirName + '/' + nameofFileFiltered + "_density" + ".txt","w")
+            for i in range(0,len(posOfArrays[0])):
+                file.write(str(int(posOfArrays[0][i])) + "," + str(int(posOfArrays[1][i])) + "," + str(int(v_values[i])) + "\n")
+            file.close()
+
+        if densityCalculated == False:
+            self.msg = QtWidgets.QMessageBox.about(self,'Save density map data','Density map data has been saved sucessfully')
+            densityCalculated = True
+
+
+        #densityCalculated = True
 
         self.rePaintWithZoom(self._zoom) ##-
 
@@ -1531,6 +1613,8 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global areaROI
         global areaROI_cm
         global areaCalculated
+
+        global nameofFileFiltered
 
         if var == 0:
             valCenterMassX = statistics.mean(valuesXMed)
@@ -3194,21 +3278,23 @@ class Window(QtWidgets.QWidget):
         i = 0
         directorio = QFileDialog.getExistingDirectory(self, 'Select Dataset of raw images')
 
-        renameFolderName = directorio.split('/')[-1] + "/"
+        if directorio != '':
 
-        files = os.listdir(directorio)
-        files = self.sorted_aphanumeric(files)
-        dataName, okPressed = QInputDialog.getText(self, "Rename Dataset", "Insert new name:")
+            renameFolderName = directorio.split('/')[-1] + "/"
 
-        if okPressed:
-            for filename in files:
-                src = directorio + "/" + filename
-                format = src.split('.')[-1]
-                number = '{0:03}'.format(i)
-                dst = dataName + str(number) + "."+ format
-                dst = directorio + "/" + dst
-                os.rename(src,dst)
-                i+=1
+            files = os.listdir(directorio)
+            files = self.sorted_aphanumeric(files)
+            dataName, okPressed = QInputDialog.getText(self, "Rename Dataset", "Insert new name:")
+
+            if okPressed:
+                for filename in files:
+                    src = directorio + "/" + filename
+                    format = src.split('.')[-1]
+                    number = '{0:03}'.format(i)
+                    dst = dataName + str(number) + "."+ format
+                    dst = directorio + "/" + dst
+                    os.rename(src,dst)
+                    i+=1
 
 # Clase principal o Main del programa que contiene la ventana principal
 # que a su vez contiene al resto de clases
