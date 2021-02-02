@@ -1138,6 +1138,14 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global veldir_velocity
         global veldir_position
 
+        del timElapse
+        del schoolVelocity
+        del veldir_vec_v[:]
+        del veldir_vec_u[:]
+        del veldir_angle[:]
+        del veldir_velocity[:]
+        del veldir_position[:]
+
         self.cont = True
         timElapse, okPressed = QInputDialog.getDouble(self, "Frame time lapse", "Timelapse(s):")
 
@@ -1269,6 +1277,14 @@ class PhotoVectorViewer(QtWidgets.QGraphicsView):
         global filesYPointsCenter
         global color_perimeter
         global readFilesLong
+
+        del files[:]
+        del filesXPoints[:]
+        del filesYPoints[:]
+        del filesXPointsCenter[:]
+        del filesYPointsCenter[:]
+        del readFilesLong[:]
+
 
         # Se meten todos los ficheros a analizar al array de ficheros
         for i in os.listdir("perimeterData"):
