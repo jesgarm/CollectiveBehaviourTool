@@ -3159,6 +3159,12 @@ class Window(QtWidgets.QWidget):
             self.dialog.cb_perimeter.setEnabled(True)
             self.dialog.cb_density.setEnabled(True)
 
+            self.dialog.cb_3Ddensity.setEnabled(True)
+            self.dialog.savegifbtn.setVisible(False)
+            self.dialog.savevideobtn.setVisible(False)
+
+
+
             if ratio_cm_pixel != 0:
                 x = self.dialog.viewerRes._scene.width()
                 y = self.dialog.viewerRes._scene.height()
